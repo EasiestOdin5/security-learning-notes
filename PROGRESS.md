@@ -11,16 +11,16 @@
 
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
-| Modern Identity | 4.0 | 4.75 | 8.0 | +0.75 | 3.25 |
-| AWS / Cloud Security | 5.0 | 5.75 | 8.0 | +0.75 | 2.25 |
+| Modern Identity | 4.0 | 5.0 | 8.0 | +1.0 | 3.0 |
+| AWS / Cloud Security | 5.0 | 6.0 | 8.0 | +1.0 | 2.0 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
-| Cloud / Modern Incident Response | 6.0 | 6.5 | 8.0 | +0.5 | 1.5 |
+| Cloud / Modern Incident Response | 6.0 | 6.75 | 8.0 | +0.75 | 1.25 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
 | PKI / TLS / Secrets | 4.5 | 4.5 | 7.0 | — | 2.5 |
 | Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
 | Vulnerability Management | 5.0 | 5.0 | 7.0 | — | 2.0 |
-| Enterprise Security Controls | 5.5 | 6.0 | 7.0 | +0.5 | 1.0 |
+| Enterprise Security Controls | 5.5 | 6.25 | 7.0 | +0.75 | 0.75 |
 
 ## Radar View: Initial, Current, and Goal
 
@@ -30,7 +30,7 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement so far is in **Modern Identity** and **AWS / Cloud Security**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The improvement is real but still guided: the labs were completed hands-on, while several authorization and credential-abuse conclusions still required prompts or correction.
+The strongest measured improvement so far is in **Modern Identity** and **AWS / Cloud Security**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The S3 lab added an end-to-end authorization and evidence chain: scoped federated access, identity and resource policies, explicit deny, public-access prevention, object version recovery, and S3 data-event attribution. The improvement is real but still guided, and one CLI behavior remains unresolved.
 
 No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, Linux operations, or vulnerability management because the current repository does not yet contain new dated evidence for those areas.
 
@@ -178,6 +178,39 @@ Demonstrated hands-on:
 
 ---
 
+### August 18, 2026 — S3 Authorization, Versioning, and CloudTrail Data Events
+
+**Evidence:** [AWS Security Lab: S3 Authorization, Versioning, and CloudTrail Data Events](aws-security/2026-08-18-s3-authorization-versioning-cloudtrail-data-events.md)
+
+Demonstrated hands-on:
+
+- Created a private S3 bucket with Block Public Access enabled and separated objects into `allowed/` and `restricted/` prefixes.
+- Created and assumed a scoped IAM Identity Center permission set through an AWS CLI SSO profile.
+- Allowed bucket listing only for one prefix and object reads only within that prefix.
+- Verified allowed operations and implicit-deny failures against the restricted prefix.
+- Applied a bucket-policy explicit deny and proved it overrode the identity-policy allow without denying the separate list action.
+- Observed Block Public Access reject a bucket policy that attempted to grant public object access.
+- Inspected default SSE-S3 encryption without claiming customer-managed KMS experience.
+- Enabled versioning, distinguished the pre-versioning `null` version from a generated version ID, and added `s3:GetObjectVersion` to retrieve historical data.
+- Created a delete marker and recovered the object by removing only that marker.
+- Distinguished CloudTrail management events from S3 object-level data events.
+- Created a narrowly filtered trail for read-only `GetObject` events and parsed both successful and denied events from delivered JSON.
+- Attributed object access to the `AWSReservedSSO_S3LabScopedRead` assumed role using event identity, resource, source-IP, user-agent, and error fields.
+- Removed the trail, buckets, versions, permission-set assignment, and permission set.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Modern Identity | 4.75 | 5.0 | Used a second scoped Identity Center role and correlated its assumed-role session to data-plane activity |
+| AWS / Cloud Security | 5.75 | 6.0 | Demonstrated S3 authorization, resource policies, explicit deny, Block Public Access, encryption inspection, and version recovery |
+| Cloud / Modern Incident Response | 6.5 | 6.75 | Configured object-level telemetry and reconstructed successful and denied access from raw CloudTrail JSON |
+| Enterprise Security Controls | 6.0 | 6.25 | Connected least privilege, explicit deny, public-access prevention, versioning, encryption, and audit evidence |
+
+**Why the increases were limited:** The workflow was guided, the exact reason a high-level `aws s3 cp` attempt returned `403 HeadObject Forbidden` while the direct `s3api get-object` call succeeded was not isolated, and independent reconstruction is still required. A future repeat should use `--debug` or equivalent evidence to explain such discrepancies instead of guessing.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -205,25 +238,24 @@ After each new dated learning note:
 
 ## Current Priority Gaps
 
-1. Independently reconstruct AWS traffic, identity, and authorization paths without prompts.
-2. Repeat EC2 workload-role and IMDSv2 analysis independently, then add policy conditions that constrain credential misuse.
+1. Independently reconstruct AWS policy evaluation across identity policies, resource policies, explicit denies, and conditions.
+2. Advanced IAM: permissions boundaries, Access Analyzer, cross-account roles, and policy conditions.
 3. Workload identity and Kubernetes RBAC through hands-on labs.
-4. Cloud-native incident reconstruction across CloudTrail, Flow Logs, GuardDuty, workload logs, and identity-provider evidence.
+4. Cloud-native incident reconstruction across CloudTrail, Flow Logs, GuardDuty, Config, workload logs, and identity-provider evidence.
 5. End-to-end DevSecOps pipeline implementation and finding remediation.
 
 ---
 
 ## Next Evidence Opportunity
 
-The next recommended note should document an **S3 authorization and data-protection lab**:
+The next recommended note should document an **advanced IAM policy-evaluation lab**:
 
-- Create a private test bucket.
-- Compare an IAM identity policy with a bucket resource policy.
-- Scope access to one bucket or object prefix.
-- Add and observe an explicit deny.
-- Verify S3 Block Public Access behavior.
-- Perform allowed and denied object operations.
-- Distinguish CloudTrail management events from S3 data events.
-- Reconstruct the authorization result and clean up the bucket.
+- Compare identity and resource policies across two roles.
+- Add conditions such as principal ARN, Region, or source VPC endpoint.
+- Add a permissions boundary and show that it limits maximum identity permissions without granting access.
+- Use IAM Policy Simulator or Access Analyzer where appropriate.
+- Perform allowed and denied API calls.
+- Reconstruct the decisions from CloudTrail evidence.
+- Clean up all temporary roles and policies.
 
-Successful completion would add practical evidence for AWS / Cloud Security, Enterprise Security Controls, and Cloud / Modern Incident Response.
+Successful completion would add practical evidence for Modern Identity, AWS / Cloud Security, Enterprise Security Controls, and Cloud / Modern Incident Response.
