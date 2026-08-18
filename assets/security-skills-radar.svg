@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="900" viewBox="0 0 1000 900" role="img" aria-labelledby="title desc">
+  <title id="title">Security skills radar: baseline, current, and goal</title>
+  <desc id="desc">Ten security skill areas scored from zero to ten. Baseline is gray, current is blue, and goal is green.</desc>
+  <rect width="1000" height="900" rx="24" fill="#ffffff"/>
+  <text x="500" y="34" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">Security Skills Progress — August 18, 2026</text>
+
+  <g fill="none" stroke="#d1d5db" stroke-width="1">
+    <polygon points="500.0,370.0 535.3,381.5 557.1,411.5 557.1,448.5 535.3,478.5 500.0,490.0 464.7,478.5 442.9,448.5 442.9,411.5 464.7,381.5"/>
+    <polygon points="500.0,310.0 570.5,332.9 614.1,392.9 614.1,467.1 570.5,527.1 500.0,550.0 429.5,527.1 385.9,467.1 385.9,392.9 429.5,332.9"/>
+    <polygon points="500.0,250.0 605.8,284.4 671.2,374.4 671.2,485.6 605.8,575.6 500.0,610.0 394.2,575.6 328.8,485.6 328.8,374.4 394.2,284.4"/>
+    <polygon points="500.0,190.0 641.1,235.8 728.3,355.8 728.3,504.2 641.1,624.2 500.0,670.0 358.9,624.2 271.7,504.2 271.7,355.8 358.9,235.8"/>
+    <polygon points="500.0,130.0 676.3,187.3 785.3,337.3 785.3,522.7 676.3,672.7 500.0,730.0 323.7,672.7 214.7,522.7 214.7,337.3 323.7,187.3"/>
+  </g>
+
+  <g stroke="#e5e7eb" stroke-width="1">
+    <line x1="500" y1="430" x2="500.0" y2="130.0"/>
+    <line x1="500" y1="430" x2="676.3" y2="187.3"/>
+    <line x1="500" y1="430" x2="785.3" y2="337.3"/>
+    <line x1="500" y1="430" x2="785.3" y2="522.7"/>
+    <line x1="500" y1="430" x2="676.3" y2="672.7"/>
+    <line x1="500" y1="430" x2="500.0" y2="730.0"/>
+    <line x1="500" y1="430" x2="323.7" y2="672.7"/>
+    <line x1="500" y1="430" x2="214.7" y2="522.7"/>
+    <line x1="500" y1="430" x2="214.7" y2="337.3"/>
+    <line x1="500" y1="430" x2="323.7" y2="187.3"/>
+  </g>
+
+  <g font-family="Arial, sans-serif" font-size="12" fill="#6b7280">
+    <text x="506" y="373">2</text>
+    <text x="506" y="313">4</text>
+    <text x="506" y="253">6</text>
+    <text x="506" y="193">8</text>
+    <text x="506" y="133">10</text>
+  </g>
+
+  <polygon points="500.0,190.0 641.1,235.8 728.3,355.8 728.3,504.2 632.3,612.0 500.0,655.0 376.6,599.9 300.3,494.9 300.3,365.1 376.6,260.1" fill="#22c55e" fill-opacity="0.10" stroke="#16a34a" stroke-width="3" stroke-dasharray="8 5"/>
+  <polygon points="500.0,310.0 588.2,308.6 642.7,383.6 671.2,485.6 597.0,563.5 500.0,610.0 420.6,539.2 328.8,485.6 357.3,383.6 403.0,296.5" fill="#6b7280" fill-opacity="0.12" stroke="#6b7280" stroke-width="2"/>
+  <polygon points="500.0,287.5 601.4,290.4 642.7,383.6 685.5,490.3 597.0,563.5 500.0,610.0 420.6,539.2 328.8,485.6 357.3,383.6 394.2,284.4" fill="#3b82f6" fill-opacity="0.24" stroke="#2563eb" stroke-width="3"/>
+
+  <g fill="#2563eb">
+    <circle cx="500.0" cy="287.5" r="4"/><circle cx="601.4" cy="290.4" r="4"/>
+    <circle cx="642.7" cy="383.6" r="4"/><circle cx="685.5" cy="490.3" r="4"/>
+    <circle cx="597.0" cy="563.5" r="4"/><circle cx="500.0" cy="610.0" r="4"/>
+    <circle cx="420.6" cy="539.2" r="4"/><circle cx="328.8" cy="485.6" r="4"/>
+    <circle cx="357.3" cy="383.6" r="4"/><circle cx="394.2" cy="284.4" r="4"/>
+  </g>
+
+  <g font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#111827">
+    <text x="500.0" y="65.0" text-anchor="middle">Modern Identity</text>
+    <text x="714.5" y="134.7" text-anchor="start">AWS / Cloud</text>
+    <text x="847.1" y="317.2" text-anchor="start">Kubernetes</text>
+    <text x="847.1" y="542.8" text-anchor="start">Cloud IR</text>
+    <text x="714.5" y="725.3" text-anchor="start">DevSecOps</text>
+    <text x="500.0" y="795.0" text-anchor="middle">AppSec</text>
+    <text x="285.5" y="725.3" text-anchor="end">PKI / TLS</text>
+    <text x="152.9" y="542.8" text-anchor="end">Linux SecOps</text>
+    <text x="185.0" y="317.2" text-anchor="end">Vulnerability Mgmt</text>
+    <text x="285.5" y="134.7" text-anchor="end">Enterprise Controls</text>
+  </g>
+
+  <g font-family="Arial, sans-serif" font-size="14" fill="#374151">
+    <rect x="285" y="835" width="18" height="4" fill="#6b7280"/><text x="312" y="842">Baseline</text>
+    <rect x="430" y="835" width="18" height="4" fill="#2563eb"/><text x="457" y="842">Current</text>
+    <rect x="565" y="835" width="18" height="4" fill="#16a34a"/><text x="592" y="842">Goal</text>
+  </g>
+  <text x="500" y="875" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6b7280">Scores are evidence-based, not a percentage of course completion. Outer ring = 10.</text>
+</svg>
