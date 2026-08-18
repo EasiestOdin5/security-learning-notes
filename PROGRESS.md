@@ -1,7 +1,7 @@
 # Security Skills Progress Tracker
 
 **Baseline date:** August 11, 2026  
-**Last updated:** August 16, 2026  
+**Last updated:** August 18, 2026  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated notes contain demonstrated evidence. Discussion, recognition, or a correct guess alone does not increase a score.
 
@@ -11,20 +11,26 @@
 
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
-| Modern Identity | 4.0 | 4.5 | 8.0 | +0.5 | 3.5 |
-| AWS / Cloud Security | 5.0 | 5.5 | 8.0 | +0.5 | 2.5 |
+| Modern Identity | 4.0 | 4.75 | 8.0 | +0.75 | 3.25 |
+| AWS / Cloud Security | 5.0 | 5.75 | 8.0 | +0.75 | 2.25 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
-| Cloud / Modern Incident Response | 6.0 | 6.25 | 8.0 | +0.25 | 1.75 |
+| Cloud / Modern Incident Response | 6.0 | 6.5 | 8.0 | +0.5 | 1.5 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
 | PKI / TLS / Secrets | 4.5 | 4.5 | 7.0 | — | 2.5 |
 | Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
 | Vulnerability Management | 5.0 | 5.0 | 7.0 | — | 2.0 |
-| Enterprise Security Controls | 5.5 | 5.75 | 7.0 | +0.25 | 1.25 |
+| Enterprise Security Controls | 5.5 | 6.0 | 7.0 | +0.5 | 1.0 |
+
+## Radar View: Initial, Current, and Goal
+
+![Security skills radar showing baseline, current evidence, and goal](assets/security-skills-radar.svg)
+
+The chart uses the same 0–10 evidence-based scores as the table. Moving outward means stronger demonstrated working knowledge; it does **not** mean percent completion of a fixed course.
 
 ### Overall interpretation
 
-The strongest measured improvement so far is in **Modern Identity** and **AWS / Cloud Security**. The improvement is real but still guided: the labs were completed hands-on, while several traffic paths and authorization chains still required prompts to reconstruct.
+The strongest measured improvement so far is in **Modern Identity** and **AWS / Cloud Security**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The improvement is real but still guided: the labs were completed hands-on, while several authorization and credential-abuse conclusions still required prompts or correction.
 
 No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, Linux operations, or vulnerability management because the current repository does not yet contain new dated evidence for those areas.
 
@@ -138,6 +144,40 @@ Demonstrated hands-on:
 
 ---
 
+### August 17–18, 2026 — EC2 IAM Role, IMDSv2, and CloudTrail
+
+**Evidence:** [AWS Security Lab: EC2 IAM Role, IMDSv2, Least Privilege, and CloudTrail](aws-security/2026-08-17-18-ec2-iam-role-imdsv2-cloudtrail.md)
+
+Demonstrated hands-on:
+
+- Created an IAM role trusted by the EC2 service and separated its trust policy from its permissions policy.
+- Added a least-privilege inline policy allowing only `s3:ListAllMyBuckets`.
+- Attached the role to Amazon Linux through an EC2 instance profile.
+- Required IMDSv2 and obtained a token without displaying it.
+- Retrieved the attached role name and inspected non-secret credential metadata.
+- Proved tokenless IMDS access returned `401 Unauthorized`.
+- Verified the EC2 assumed-role identity with `sts:GetCallerIdentity`.
+- Performed an allowed `ListBuckets` call and a denied `DescribeInstances` call.
+- Diagnosed a malformed regional prefix-list selection and a failed SSH connection caused by the default Security Group being attached.
+- Corrected the instance ENI's Security Group and connected with browser-based EC2 Instance Connect.
+- Reconstructed allowed and denied workload activity in CloudTrail.
+- Correlated assumed-role identity, instance session name, source IP, API action, error, and `ec2RoleDelivery: 2.0`.
+- Corrected the assumption that EC2 temporary credentials are bound to the original instance; recognized that stolen credentials are portable until expiration but cannot refresh after instance access is lost.
+- Cleaned up the instance, dedicated Security Group, role, and inline policy.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Modern Identity | 4.5 | 4.75 | Direct workload-role, trust-policy, assumed-session, IMDSv2, expiration, and refresh evidence |
+| AWS / Cloud Security | 5.5 | 5.75 | Practical role, instance profile, EC2, managed prefix list, least privilege, metadata, and troubleshooting evidence |
+| Cloud / Modern Incident Response | 6.25 | 6.5 | Reconstructed both allowed and denied workload events using identity, network, and credential-delivery context |
+| Enterprise Security Controls | 5.75 | 6.0 | Demonstrated layered trust, permissions, network-source restriction, IMDSv2, and least-privilege controls |
+
+**Why the increases were limited:** The workflow was guided. The role and CloudTrail chain were reconstructed successfully, but credential portability was initially answered incorrectly, and several console/configuration steps required troubleshooting prompts. The next increase should require independent repetition or transfer to a new workload scenario.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -165,8 +205,8 @@ After each new dated learning note:
 
 ## Current Priority Gaps
 
-1. Independently reconstruct AWS traffic and authorization paths without prompts.
-2. EC2 IAM roles, instance profiles, IMDSv2, temporary credential rotation, and credential-theft implications.
+1. Independently reconstruct AWS traffic, identity, and authorization paths without prompts.
+2. Repeat EC2 workload-role and IMDSv2 analysis independently, then add policy conditions that constrain credential misuse.
 3. Workload identity and Kubernetes RBAC through hands-on labs.
 4. Cloud-native incident reconstruction across CloudTrail, Flow Logs, GuardDuty, workload logs, and identity-provider evidence.
 5. End-to-end DevSecOps pipeline implementation and finding remediation.
@@ -175,14 +215,15 @@ After each new dated learning note:
 
 ## Next Evidence Opportunity
 
-The next recommended note should document an **EC2 IAM role and IMDSv2 lab**:
+The next recommended note should document an **S3 authorization and data-protection lab**:
 
-- Create a least-privilege EC2 role and instance profile.
-- Require IMDSv2.
-- Retrieve metadata through an IMDSv2 token.
-- Observe temporary role credentials without storing secrets.
-- Perform one allowed and one denied API operation.
-- Reconstruct both operations in CloudTrail.
-- Explain credential use, expiration, refresh, and what happens after instance access is lost.
+- Create a private test bucket.
+- Compare an IAM identity policy with a bucket resource policy.
+- Scope access to one bucket or object prefix.
+- Add and observe an explicit deny.
+- Verify S3 Block Public Access behavior.
+- Perform allowed and denied object operations.
+- Distinguish CloudTrail management events from S3 data events.
+- Reconstruct the authorization result and clean up the bucket.
 
-Successful completion with less prompting would support future increases in Modern Identity, AWS / Cloud Security, and Cloud / Modern Incident Response.
+Successful completion would add practical evidence for AWS / Cloud Security, Enterprise Security Controls, and Cloud / Modern Incident Response.
