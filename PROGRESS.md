@@ -1,7 +1,7 @@
 # Security Skills Progress Tracker
 
 **Baseline date:** August 11, 2026  
-**Last updated:** August 18, 2026  
+**Last updated:** August 19, 2026  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated notes contain demonstrated evidence. Discussion, recognition, or a correct guess alone does not increase a score.
 
@@ -11,16 +11,16 @@
 
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
-| Modern Identity | 4.0 | 5.0 | 8.0 | +1.0 | 3.0 |
-| AWS / Cloud Security | 5.0 | 6.0 | 8.0 | +1.0 | 2.0 |
+| Modern Identity | 4.0 | 5.25 | 8.0 | +1.25 | 2.75 |
+| AWS / Cloud Security | 5.0 | 6.25 | 8.0 | +1.25 | 1.75 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
-| Cloud / Modern Incident Response | 6.0 | 6.75 | 8.0 | +0.75 | 1.25 |
+| Cloud / Modern Incident Response | 6.0 | 7.0 | 8.0 | +1.0 | 1.0 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
 | PKI / TLS / Secrets | 4.5 | 4.5 | 7.0 | — | 2.5 |
 | Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
 | Vulnerability Management | 5.0 | 5.0 | 7.0 | — | 2.0 |
-| Enterprise Security Controls | 5.5 | 6.25 | 7.0 | +0.75 | 0.75 |
+| Enterprise Security Controls | 5.5 | 6.5 | 7.0 | +1.0 | 0.5 |
 
 ## Radar View: Initial, Current, and Goal
 
@@ -30,7 +30,7 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement so far is in **Modern Identity** and **AWS / Cloud Security**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The S3 lab added an end-to-end authorization and evidence chain: scoped federated access, identity and resource policies, explicit deny, public-access prevention, object version recovery, and S3 data-event attribution. The improvement is real but still guided, and one CLI behavior remains unresolved.
+The strongest measured improvement so far is in **Modern Identity** and **AWS / Cloud Security**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The advanced IAM lab added direct evidence for boundary evaluation, request conditions, trust-policy conditions, `PassRole`, and successful/denied STS and EC2 reconstruction. The improvement is real but still guided; independent transfer to a new authorization scenario remains the main requirement for larger increases.
 
 No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, Linux operations, or vulnerability management because the current repository does not yet contain new dated evidence for those areas.
 
@@ -211,6 +211,39 @@ Demonstrated hands-on:
 
 ---
 
+### August 19, 2026 — Advanced IAM Boundaries, Trust Conditions, and Access Analyzer
+
+**Evidence:** [AWS Security Lab: Permissions Boundaries, Trust Conditions, and Access Analyzer](aws-security/2026-08-19-advanced-iam-boundaries-trust-conditions-access-analyzer.md)
+
+Demonstrated hands-on:
+
+- Created a customer-managed permissions boundary containing three EC2 read actions.
+- Created and assumed a test IAM role from an Identity Center administrator session.
+- Proved that `AdministratorAccess` was capped by the boundary when IAM and S3 operations were denied.
+- Isolated a Console dependency: direct `DescribeVpcs` succeeded while the VPC page failed because it also required `DescribeAccountAttributes`.
+- Removed the role's permissions policy and proved that a boundary alone did not grant `DescribeVpcs`.
+- Added a narrow inline identity policy and directly demonstrated the identity-policy/boundary intersection.
+- Applied `aws:RequestedRegion` and proved the same `DescribeVpcs` action succeeded in `us-east-1` and failed in `us-west-1`.
+- Added an `sts:ExternalId` trust condition and tested failed and successful new role assumptions without displaying credentials.
+- Reconstructed allowed and denied EC2 and STS calls in CloudTrail, including role session, Region, external ID, error, and expiration.
+- Located the target STS role under `requestParameters.roleArn` when the top-level resource list was empty.
+- Used Access Analyzer policy validation to detect wildcard `iam:PassRole`, then removed the warning by restricting the role ARN and `iam:PassedToService`.
+- Corrected the distinction between `iam:PassRole` and `sts:AssumeRole`.
+- Deleted the role, boundary policy, inline policy, and local CLI profile.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Modern Identity | 5.0 | 5.25 | Direct trust-policy, ExternalId, STS session, PassRole, and AssumeRole evidence |
+| AWS / Cloud Security | 6.0 | 6.25 | Practical permissions-boundary, policy-intersection, API-isolation, and Region-condition testing |
+| Cloud / Modern Incident Response | 6.75 | 7.0 | Reconstructed successful and denied EC2/STS decisions from CloudTrail fields |
+| Enterprise Security Controls | 6.25 | 6.5 | Demonstrated permission ceilings, conditional trust, least-privilege PassRole validation, and audit evidence |
+
+**Why the increases were limited:** The lab was guided. The initial knowledge-check response omitted the boundary when explaining post-assumption authorization, and the initial `PassRole` answer also selected `AssumeRole`. Both were corrected during the lab. A larger increase should require independent policy reconstruction and troubleshooting in a new scenario.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -238,8 +271,8 @@ After each new dated learning note:
 
 ## Current Priority Gaps
 
-1. Independently reconstruct AWS policy evaluation across identity policies, resource policies, explicit denies, and conditions.
-2. Advanced IAM: permissions boundaries, Access Analyzer, cross-account roles, and policy conditions.
+1. Independently reconstruct AWS policy evaluation across trust, identity, resource, boundary, condition, and explicit-deny layers.
+2. Cross-account IAM and service control policies in a safe multi-account or simulated design.
 3. Workload identity and Kubernetes RBAC through hands-on labs.
 4. Cloud-native incident reconstruction across CloudTrail, Flow Logs, GuardDuty, Config, workload logs, and identity-provider evidence.
 5. End-to-end DevSecOps pipeline implementation and finding remediation.
@@ -248,14 +281,13 @@ After each new dated learning note:
 
 ## Next Evidence Opportunity
 
-The next recommended note should document an **advanced IAM policy-evaluation lab**:
+The next recommended note should document a **GuardDuty and cloud incident-investigation lab**:
 
-- Compare identity and resource policies across two roles.
-- Add conditions such as principal ARN, Region, or source VPC endpoint.
-- Add a permissions boundary and show that it limits maximum identity permissions without granting access.
-- Use IAM Policy Simulator or Access Analyzer where appropriate.
-- Perform allowed and denied API calls.
-- Reconstruct the decisions from CloudTrail evidence.
-- Clean up all temporary roles and policies.
+- Enable or inspect GuardDuty with a clear cost check.
+- Use AWS sample findings rather than generating malicious traffic.
+- Interpret finding type, severity, actor, resource, and network context.
+- Pivot from a finding into CloudTrail and any relevant network or workload telemetry.
+- Build a concise incident timeline and containment decision.
+- Remove temporary resources and review any continuing service state.
 
-Successful completion would add practical evidence for Modern Identity, AWS / Cloud Security, Enterprise Security Controls, and Cloud / Modern Incident Response.
+Successful completion would add practical evidence primarily for AWS / Cloud Security and Cloud / Modern Incident Response.
