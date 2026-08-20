@@ -1,7 +1,7 @@
 # Security Skills Progress Tracker
 
 **Baseline date:** August 11, 2026  
-**Last updated:** August 19, 2026  
+**Last updated:** August 20, 2026  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated notes contain demonstrated evidence. Discussion, recognition, or a correct guess alone does not increase a score.
 
@@ -12,15 +12,15 @@
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
 | Modern Identity | 4.0 | 5.25 | 8.0 | +1.25 | 2.75 |
-| AWS / Cloud Security | 5.0 | 6.25 | 8.0 | +1.25 | 1.75 |
+| AWS / Cloud Security | 5.0 | 6.5 | 8.0 | +1.5 | 1.5 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
-| Cloud / Modern Incident Response | 6.0 | 7.0 | 8.0 | +1.0 | 1.0 |
+| Cloud / Modern Incident Response | 6.0 | 7.25 | 8.0 | +1.25 | 0.75 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
 | PKI / TLS / Secrets | 4.5 | 4.5 | 7.0 | — | 2.5 |
 | Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
 | Vulnerability Management | 5.0 | 5.0 | 7.0 | — | 2.0 |
-| Enterprise Security Controls | 5.5 | 6.5 | 7.0 | +1.0 | 0.5 |
+| Enterprise Security Controls | 5.5 | 6.75 | 7.0 | +1.25 | 0.25 |
 
 ## Radar View: Initial, Current, and Goal
 
@@ -30,7 +30,7 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement so far is in **Modern Identity** and **AWS / Cloud Security**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The advanced IAM lab added direct evidence for boundary evaluation, request conditions, trust-policy conditions, `PassRole`, and successful/denied STS and EC2 reconstruction. The improvement is real but still guided; independent transfer to a new authorization scenario remains the main requirement for larger increases.
+The strongest measured improvement so far is in **AWS / Cloud Security** and **Modern Identity**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The GuardDuty introduction added direct evidence for operating a detective control, interpreting a correlated IAM attack sequence, separating alert inference from proof, choosing session containment, and managing finding lifecycle. The work remains guided and synthetic; the planned multi-case GuardDuty capstone and independent reconstruction remain necessary for larger increases.
 
 No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, Linux operations, or vulnerability management because the current repository does not yet contain new dated evidence for those areas.
 
@@ -244,6 +244,41 @@ Demonstrated hands-on:
 
 ---
 
+### August 19–20, 2026 — GuardDuty Introduction and IAM Attack-Sequence Triage
+
+**Evidence:** [AWS Security Lab: GuardDuty Introduction and IAM Attack-Sequence Triage](aws-security/2026-08-19-20-guardduty-intro-iam-attack-sequence.md)
+
+Demonstrated hands-on:
+
+- Enabled GuardDuty in `us-east-1` after confirming a 30-day trial and reviewing enabled protection plans.
+- Checked the Usage page before telemetry appeared and later observed CloudTrail-event usage.
+- Generated built-in synthetic sample findings without deploying attack infrastructure.
+- Selected a Critical `AttackSequence:IAM/CompromisedCredentials` finding and interpreted four correlated signals.
+- Connected `CreateRole`, `AttachRolePolicy`, `ListUsers`, and `DeleteTrail` to persistence, escalation, discovery, and defense evasion.
+- Corrected “attach a role” to “attach a policy to a role.”
+- Distinguished a likely Kali-through-Tor scenario from facts GuardDuty could actually observe.
+- Reviewed finding JSON, recognized `sample:true`, and identified `ASIA` as temporary STS credentials.
+- Determined that resetting a password would not necessarily invalidate the issued session and selected active-session revocation as initial containment.
+- Distinguished deleting a trail configuration from deleting existing CloudTrail log objects or all Event History.
+- Recognized that synthetic sample APIs would not exist in the account's real CloudTrail history.
+- Archived the finding, located the Archived view, and learned the 90-day GuardDuty retention period.
+- Connected GuardDuty alerts to EventBridge/Security Hub, SIEM/SOAR, and the need for underlying evidence sources.
+- Intentionally left GuardDuty enabled in one Region during the free trial for continued baseline monitoring.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| AWS / Cloud Security | 6.25 | 6.5 | Operated GuardDuty, reviewed protection/usage state, generated findings, and interpreted a cloud IAM attack sequence |
+| Cloud / Modern Incident Response | 7.0 | 7.25 | Distinguished alert from evidence, scoped required pivots, prioritized session containment, and managed finding lifecycle |
+| Enterprise Security Controls | 6.5 | 6.75 | Demonstrated a managed detective control, cost/trial awareness, alert retention, and SIEM integration reasoning |
+
+**Why the increases were limited:** The finding was synthetic and the workflow was guided. No real CloudTrail pivot, EventBridge/Security Hub integration, automated containment, or multi-case investigation was performed. Modern Identity did not increase because the identity content reviewed previous knowledge rather than demonstrating a new configuration workflow.
+
+**Continuing state:** GuardDuty remains enabled in `us-east-1` during its confirmed trial. Usage and the trial-expiration decision must be monitored; this is not a fully cleaned-up lab.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -274,20 +309,21 @@ After each new dated learning note:
 1. Independently reconstruct AWS policy evaluation across trust, identity, resource, boundary, condition, and explicit-deny layers.
 2. Cross-account IAM and service control policies in a safe multi-account or simulated design.
 3. Workload identity and Kubernetes RBAC through hands-on labs.
-4. Cloud-native incident reconstruction across CloudTrail, Flow Logs, GuardDuty, Config, workload logs, and identity-provider evidence.
+4. Independent cloud-incident reconstruction across GuardDuty, CloudTrail, Flow Logs, Config, workload logs, and identity-provider evidence.
 5. End-to-end DevSecOps pipeline implementation and finding remediation.
 
 ---
 
 ## Next Evidence Opportunity
 
-The next recommended note should document a **GuardDuty and cloud incident-investigation lab**:
+The next recommended note should document an **AWS Config and Security Hub fundamentals lab**:
 
-- Enable or inspect GuardDuty with a clear cost check.
-- Use AWS sample findings rather than generating malicious traffic.
-- Interpret finding type, severity, actor, resource, and network context.
-- Pivot from a finding into CloudTrail and any relevant network or workload telemetry.
-- Build a concise incident timeline and containment decision.
-- Remove temporary resources and review any continuing service state.
+- Inspect Config and Security Hub pricing/trial state before enablement.
+- Enable only the minimum Region and features needed for the lab.
+- Record selected AWS resources with Config.
+- Evaluate a small set of configuration rules or controls.
+- Understand Security Hub findings, standards, aggregation, and workflow status.
+- Connect configuration evidence, findings, and remediation ownership.
+- Clean up or explicitly document any continuing services and costs.
 
-Successful completion would add practical evidence primarily for AWS / Cloud Security and Cloud / Modern Incident Response.
+Successful completion would add practical evidence primarily for AWS / Cloud Security and Enterprise Security Controls.
