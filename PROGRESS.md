@@ -1,7 +1,7 @@
 # Security Skills Progress Tracker
 
 **Baseline date:** August 11, 2026  
-**Last updated:** August 20, 2026  
+**Last updated:** August 21, 2026  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated notes contain demonstrated evidence. Discussion, recognition, or a correct guess alone does not increase a score.
 
@@ -12,15 +12,15 @@
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
 | Modern Identity | 4.0 | 5.25 | 8.0 | +1.25 | 2.75 |
-| AWS / Cloud Security | 5.0 | 6.5 | 8.0 | +1.5 | 1.5 |
+| AWS / Cloud Security | 5.0 | 6.75 | 8.0 | +1.75 | 1.25 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
-| Cloud / Modern Incident Response | 6.0 | 7.25 | 8.0 | +1.25 | 0.75 |
+| Cloud / Modern Incident Response | 6.0 | 7.5 | 8.0 | +1.5 | 0.5 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
 | PKI / TLS / Secrets | 4.5 | 4.5 | 7.0 | — | 2.5 |
 | Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
 | Vulnerability Management | 5.0 | 5.0 | 7.0 | — | 2.0 |
-| Enterprise Security Controls | 5.5 | 6.75 | 7.0 | +1.25 | 0.25 |
+| Enterprise Security Controls | 5.5 | 7.0 | 7.0 | +1.5 | 0.0 |
 
 ## Radar View: Initial, Current, and Goal
 
@@ -30,7 +30,7 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement so far is in **AWS / Cloud Security** and **Modern Identity**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The GuardDuty introduction added direct evidence for operating a detective control, interpreting a correlated IAM attack sequence, separating alert inference from proof, choosing session containment, and managing finding lifecycle. The work remains guided and synthetic; the planned multi-case GuardDuty capstone and independent reconstruction remain necessary for larger increases.
+The strongest measured improvement so far is in **AWS / Cloud Security** and **Modern Identity**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The AWS Config and Security Hub lab added direct evidence for configuration recording, compliance evaluation, control-to-finding mapping, ASFF comparison, finding workflow, and the full detect–remediate–resolve lifecycle. Enterprise Security Controls has reached the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided and partly synthetic; independent reconstruction and alert automation are still necessary for larger increases.
 
 No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, Linux operations, or vulnerability management because the current repository does not yet contain new dated evidence for those areas.
 
@@ -279,6 +279,39 @@ Demonstrated hands-on:
 
 ---
 
+### August 21, 2026 — AWS Config, Security Hub CSPM, and ASFF
+
+**Evidence:** [AWS Config, Security Hub CSPM, and ASFF Lab](aws-security/2026-08-21-aws-config-security-hub-asff.md)
+
+Demonstrated hands-on:
+
+- Configured AWS Config to record only EC2 Security Groups with continuous recording.
+- Added the managed `restricted-ssh` rule and deliberately created an unattached Security Group allowing TCP/22 from `0.0.0.0/0`.
+- Observed the transition from compliant to noncompliant without confusing detection with prevention.
+- Removed the insecure rule and compared before/after configuration history.
+- Enabled Security Hub for a standalone account and located the enabled FSBP and CIS standards.
+- Mapped CIS control EC2.13 to the Config-backed `restricted-ssh` evaluation.
+- Inspected a `FAILED / NEW` High-severity ASFF finding and identified its schema, compliance, severity, and workflow fields.
+- Re-generated GuardDuty samples after integration and inspected a Critical EKS attack-sequence finding in the same ASFF schema.
+- Distinguished configuration noncompliance from suspected malicious behavior.
+- Changed a finding to `NOTIFIED` and correctly separated workflow state from actual notification delivery.
+- Completed the lifecycle from deliberate exposure through Config detection, Security Hub finding, manual remediation, Config compliance, and `PASSED / RESOLVED`.
+- Deleted the test Security Group and Config rule, stopped Config recording, and emptied the delivery bucket.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| AWS / Cloud Security | 6.5 | 6.75 | Operated Config and Security Hub CSPM, traced a control evaluation, and compared normalized findings |
+| Cloud / Modern Incident Response | 7.25 | 7.5 | Investigated source, resource, severity, compliance, workflow, and lifecycle across Config and GuardDuty findings |
+| Enterprise Security Controls | 6.75 | 7.0 | Demonstrated detective control operation, standards mapping, centralized evidence, remediation verification, and control closure |
+
+**Why the increases were limited:** The workflow was guided and the GuardDuty evidence was synthetic. EventBridge notification, automated remediation, independent control selection, and a fresh unaided reconstruction were not demonstrated.
+
+**Continuing state:** GuardDuty and Security Hub remain enabled in one Region during confirmed trials. Config recording is stopped. The empty Config S3 bucket should be deleted if it was not removed after the lab.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -316,14 +349,12 @@ After each new dated learning note:
 
 ## Next Evidence Opportunity
 
-The next recommended note should document an **AWS Config and Security Hub fundamentals lab**:
+The next recommended evidence should implement a small **Security Hub notification pipeline** or continue to the next planned cloud-security fundamental:
 
-- Inspect Config and Security Hub pricing/trial state before enablement.
-- Enable only the minimum Region and features needed for the lab.
-- Record selected AWS resources with Config.
-- Evaluate a small set of configuration rules or controls.
-- Understand Security Hub findings, standards, aggregation, and workflow status.
-- Connect configuration evidence, findings, and remediation ownership.
-- Clean up or explicitly document any continuing services and costs.
+- Match one safe finding type with EventBridge.
+- Deliver it to a controlled destination such as SNS email.
+- Prove that workflow labels and real notifications are separate.
+- Inspect the event payload and identify the ASFF fields used by the rule.
+- Remove the rule and destination when complete.
 
-Successful completion would add practical evidence primarily for AWS / Cloud Security and Enterprise Security Controls.
+This would strengthen alert automation and independent cloud-incident handling without requiring attack infrastructure.
