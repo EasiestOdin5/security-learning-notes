@@ -12,9 +12,9 @@
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
 | Modern Identity | 4.0 | 5.25 | 8.0 | +1.25 | 2.75 |
-| AWS / Cloud Security | 5.0 | 6.75 | 8.0 | +1.75 | 1.25 |
+| AWS / Cloud Security | 5.0 | 7.0 | 8.0 | +2.0 | 1.0 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
-| Cloud / Modern Incident Response | 6.0 | 7.5 | 8.0 | +1.5 | 0.5 |
+| Cloud / Modern Incident Response | 6.0 | 7.75 | 8.0 | +1.75 | 0.25 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
 | PKI / TLS / Secrets | 4.5 | 4.5 | 7.0 | — | 2.5 |
@@ -30,7 +30,7 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement so far is in **AWS / Cloud Security** and **Modern Identity**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The AWS Config and Security Hub lab added direct evidence for configuration recording, compliance evaluation, control-to-finding mapping, ASFF comparison, finding workflow, and the full detect–remediate–resolve lifecycle. Enterprise Security Controls has reached the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided and partly synthetic; independent reconstruction and alert automation are still necessary for larger increases.
+The strongest measured improvement so far is in **AWS / Cloud Security** and **Modern Identity**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The AWS Config/Security Hub and EventBridge/SNS labs added direct evidence for configuration recording, compliance evaluation, control-to-finding mapping, ASFF comparison, event filtering, target delivery, monitoring reconciliation, and the full detect–notify–remediate–resolve lifecycle. Enterprise Security Controls has reached the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided and partly synthetic; independent reconstruction, deduplication, and production-grade automation are still necessary for larger increases.
 
 No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, Linux operations, or vulnerability management because the current repository does not yet contain new dated evidence for those areas.
 
@@ -312,6 +312,40 @@ Demonstrated hands-on:
 
 ---
 
+### August 21, 2026 — Security Hub, EventBridge, and SNS Alerting
+
+**Evidence:** [Security Hub EventBridge and SNS Alerting Lab](aws-security/2026-08-21-security-hub-eventbridge-sns-alerting.md)
+
+Demonstrated hands-on:
+
+- Created an SNS Standard topic, confirmed an email subscription, and independently verified message delivery.
+- Diagnosed an accidentally deleted email subscription and distinguished a stale `Deleted` console row from an active subscription.
+- Created an EventBridge rule on the default event bus for Critical `Security Hub Findings - Imported` events.
+- Targeted SNS using the default execution role and default retry policy.
+- Generated GuardDuty samples and validated the complete GuardDuty → Security Hub → EventBridge → SNS path.
+- Observed an approximately eight-email burst from a broad severity-only filter.
+- Inspected ASFF event fields and distinguished a finding title, normalized `Types`, and affected resource types.
+- Narrowed the event pattern to Critical `TTPs/AttackSequence:EC2/CompromisedInstanceGroup` findings.
+- Verified that three subsequent emails represented three distinct finding IDs of the same type.
+- Corrected the expectation that filtering by type means one notification; EventBridge routes every matching event.
+- Reconciled 11 matched events with 11 target invocations and no observed failed-invocation datapoints.
+- Compared Security Hub findings with OpenSearch Security Analytics findings without treating either as a confirmed incident.
+- Identified an Inspector `DO-NOT-DELETE` rule by its `inspector2.amazonaws.com` owner and preserved it.
+- Disabled and deleted the custom EventBridge rule and deleted the SNS topic and subscription.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| AWS / Cloud Security | 6.75 | 7.0 | Built, filtered, monitored, troubleshot, and cleaned up an EventBridge-to-SNS security-notification path |
+| Cloud / Modern Incident Response | 7.5 | 7.75 | Traced findings through normalization, event matching, invocation, delivery, and distinct-ID analysis |
+
+**Why the increases were limited:** The workflow was guided and used synthetic GuardDuty findings. No dead-letter queue, aggregation, deduplication, custom message transformation, incident ticket, or independent reconstruction was demonstrated.
+
+**No Enterprise Controls increase:** The lab reinforced detective-control routing and managed-resource ownership, but the 7.0 roadmap goal was already reached and no new enterprise-scale governance level was demonstrated.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -349,12 +383,14 @@ After each new dated learning note:
 
 ## Next Evidence Opportunity
 
-The next recommended evidence should implement a small **Security Hub notification pipeline** or continue to the next planned cloud-security fundamental:
+The next recommended note should document an **Amazon Inspector EC2 vulnerability-management lab**:
 
-- Match one safe finding type with EventBridge.
-- Deliver it to a controlled destination such as SNS email.
-- Prove that workflow labels and real notifications are separate.
-- Inspect the event payload and identify the ASFF fields used by the rule.
-- Remove the rule and destination when complete.
+- Confirm which Inspector scan types and trial state are enabled.
+- Launch one short-lived, low-cost EC2 test instance with the required management path.
+- Observe Inspector coverage and a real package finding.
+- Separate severity from exploitability, exposure, and asset importance.
+- Remediate or document the treatment decision.
+- Re-scan or verify the corrected state.
+- Terminate the instance and review Inspector's continuing cost state.
 
-This would strengthen alert automation and independent cloud-incident handling without requiring attack infrastructure.
+This would add evidence primarily for AWS / Cloud Security and Vulnerability Management.
