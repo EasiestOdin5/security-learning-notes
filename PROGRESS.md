@@ -1,7 +1,7 @@
 # Security Skills Progress Tracker
 
 **Baseline date:** August 11, 2026  
-**Last updated:** August 21, 2026  
+**Last updated:** August 25, 2026  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated notes contain demonstrated evidence. Discussion, recognition, or a correct guess alone does not increase a score.
 
@@ -12,14 +12,14 @@
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
 | Modern Identity | 4.0 | 5.25 | 8.0 | +1.25 | 2.75 |
-| AWS / Cloud Security | 5.0 | 7.0 | 8.0 | +2.0 | 1.0 |
+| AWS / Cloud Security | 5.0 | 7.25 | 8.0 | +2.25 | 0.75 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
 | Cloud / Modern Incident Response | 6.0 | 7.75 | 8.0 | +1.75 | 0.25 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
 | PKI / TLS / Secrets | 4.5 | 4.5 | 7.0 | — | 2.5 |
 | Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
-| Vulnerability Management | 5.0 | 5.0 | 7.0 | — | 2.0 |
+| Vulnerability Management | 5.0 | 5.25 | 7.0 | +0.25 | 1.75 |
 | Enterprise Security Controls | 5.5 | 7.0 | 7.0 | +1.5 | 0.0 |
 
 ## Radar View: Initial, Current, and Goal
@@ -30,9 +30,9 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement so far is in **AWS / Cloud Security** and **Modern Identity**, with supporting gains in **Cloud / Modern Incident Response** and **Enterprise Security Controls**. The AWS Config/Security Hub and EventBridge/SNS labs added direct evidence for configuration recording, compliance evaluation, control-to-finding mapping, ASFF comparison, event filtering, target delivery, monitoring reconciliation, and the full detect–notify–remediate–resolve lifecycle. Enterprise Security Controls has reached the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided and partly synthetic; independent reconstruction, deduplication, and production-grade automation are still necessary for larger increases.
+The strongest measured improvement so far is in **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. The Inspector lab added direct evidence for EC2 vulnerability-scanning coverage, SSM-backed workload management, package applicability validation, severity-versus-exposure prioritization, and agent-based versus agentless scanning. Vulnerability Management increased for the first time, but only slightly because the test instance produced no real finding and the remediation/verification lifecycle was not demonstrated. Enterprise Security Controls remains at the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided; independent reconstruction and real finding remediation are still necessary for larger increases.
 
-No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, Linux operations, or vulnerability management because the current repository does not yet contain new dated evidence for those areas.
+No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, or Linux operations because this lab did not provide sufficient new evidence for those areas.
 
 ---
 
@@ -346,6 +346,37 @@ Demonstrated hands-on:
 
 ---
 
+### August 25, 2026 — Amazon Inspector EC2 Vulnerability Management
+
+**Evidence:** [AWS Security Lab: Amazon Inspector EC2 Vulnerability Management](aws-security/2026-08-25-amazon-inspector-ec2-vulnerability-management.md)
+
+Demonstrated hands-on:
+
+- Activated Inspector's trial and identified EC2, ECR, and Lambda scan coverage.
+- Launched a short-lived Amazon Linux 2023 EC2 instance with an SSM management role.
+- Confirmed 100% virtual-machine coverage, active monitoring, scan recency, and zero findings without treating zero findings as scanner failure.
+- Used Session Manager to validate the installed `xz` and `liblzma` versions.
+- Researched `CVE-2024-3094` in Inspector's vulnerability database and separated CVSS/EPSS severity information from workload applicability.
+- Verified that the installed `5.2.5` package was not an affected upstream version and checked for pending security advisories.
+- Corrected the initial impulse to prioritize from severity alone by applying applicability, exposure, exploitability, asset importance, and fix availability.
+- Distinguished Inspector activation from the EC2 role that enabled SSM-based management and inventory.
+- Explained Hybrid scanning, including agent-based inventory and eligible agentless EBS-snapshot scanning.
+- Distinguished stopping an EC2 instance from terminating it.
+- Terminated the instance, removed its Security Group and workload role, verified no EBS volume remained, and deactivated Inspector.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| AWS / Cloud Security | 7.0 | 7.25 | Operated Inspector coverage for EC2, connected SSM workload management to scan behavior, and explained agent-based versus agentless scanning |
+| Vulnerability Management | 5.0 | 5.25 | Demonstrated CVE research, package applicability validation, security-update checking, and risk-based prioritization |
+
+**Why the increases were limited:** The workflow was guided, the live Console differed from earlier instructions, and the clean instance generated no actual finding. No vulnerable package was remediated and no finding was observed closing after a re-scan. Linux Security Operations did not increase because the package checks were too narrow to demonstrate a broader operational gain.
+
+**Cleanup state:** The EC2 instance, dedicated Security Group, EC2/SSM role, and EBS storage were removed. Inspector is deactivated. Unused Inspector service-linked roles may remain but do not incur charges merely by existing.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -383,14 +414,13 @@ After each new dated learning note:
 
 ## Next Evidence Opportunity
 
-The next recommended note should document an **Amazon Inspector EC2 vulnerability-management lab**:
+The next strongest vulnerability-management evidence would be an **isolated ECR remediation lifecycle**:
 
-- Confirm which Inspector scan types and trial state are enabled.
-- Launch one short-lived, low-cost EC2 test instance with the required management path.
-- Observe Inspector coverage and a real package finding.
-- Separate severity from exploitability, exposure, and asset importance.
-- Remediate or document the treatment decision.
-- Re-scan or verify the corrected state.
-- Terminate the instance and review Inspector's continuing cost state.
+- Push a deliberately old, non-running container image to a private ECR repository.
+- Observe real Inspector package findings.
+- Select one applicable finding and evaluate severity, exploitability, fix availability, and workload context.
+- Update the base image or affected package and rebuild.
+- Push the corrected image and verify how Inspector represents the new and old image findings.
+- Delete the test images and repository and review continuing Inspector cost state.
 
-This would add evidence primarily for AWS / Cloud Security and Vulnerability Management.
+This would demonstrate the missing finding → prioritize → remediate → verify cycle without exposing an intentionally vulnerable EC2 service to the internet.
