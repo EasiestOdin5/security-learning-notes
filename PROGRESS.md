@@ -11,13 +11,13 @@
 
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
-| Modern Identity | 4.0 | 5.25 | 8.0 | +1.25 | 2.75 |
-| AWS / Cloud Security | 5.0 | 7.5 | 8.0 | +2.5 | 0.5 |
+| Modern Identity | 4.0 | 5.5 | 8.0 | +1.5 | 2.5 |
+| AWS / Cloud Security | 5.0 | 7.75 | 8.0 | +2.75 | 0.25 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
-| Cloud / Modern Incident Response | 6.0 | 7.75 | 8.0 | +1.75 | 0.25 |
+| Cloud / Modern Incident Response | 6.0 | 8.0 | 8.0 | +2.0 | 0.0 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
-| PKI / TLS / Secrets | 4.5 | 5.0 | 7.0 | +0.5 | 2.0 |
+| PKI / TLS / Secrets | 4.5 | 5.25 | 7.0 | +0.75 | 1.75 |
 | Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
 | Vulnerability Management | 5.0 | 5.25 | 7.0 | +0.25 | 1.75 |
 | Enterprise Security Controls | 5.5 | 7.0 | 7.0 | +1.5 | 0.0 |
@@ -30,9 +30,9 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement remains **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. The KMS and Secrets Manager lab added the first substantial practical evidence for **PKI / TLS / Secrets**: customer-managed keys, key-policy delegation, scoped secret retrieval, KMS authorization failure testing, direct encryption/decryption, and encryption-context enforcement. AWS / Cloud Security also increased because the lab demonstrated a complete two-service authorization path and verified both allowed and denied outcomes. Enterprise Security Controls remains at the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided; independent reconstruction and transfer to a new workload are still necessary for larger increases.
+The strongest measured improvement remains **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. The Lambda lab transferred the prior KMS and Secrets Manager model from a human SSO session to a serverless workload: a dedicated execution role, temporary STS credentials, SDK retrieval, allow → deny → allow testing, and CloudWatch-to-CloudTrail correlation. This supports small increases in workload identity, AWS serverless security, secrets integration, and cloud investigation. Cloud / Modern Incident Response has reached the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided; an independent reconstruction across a fresh scenario is still required before claiming stronger capability.
 
-No score was increased for Kubernetes, DevSecOps, AppSec, Linux operations, Modern Identity, Cloud IR, Vulnerability Management, or Enterprise Controls because this lab did not provide sufficient new evidence beyond their current levels.
+No score was increased for Kubernetes, DevSecOps, AppSec, Linux operations, Vulnerability Management, or Enterprise Controls because this lab did not provide sufficient new evidence beyond their current levels.
 
 ---
 
@@ -409,6 +409,42 @@ Demonstrated hands-on:
 
 ---
 
+### August 26, 2026 — Lambda Workload Identity and Secrets Manager
+
+**Evidence:** [AWS Security Lab: Lambda Workload Identity and Secrets Manager](aws-security/2026-08-26-lambda-workload-identity-secrets-manager.md)
+
+Demonstrated hands-on:
+
+- Restored the pending-deletion KMS key and secret, including enabling the key after cancellation returned it to a disabled state.
+- Identified a console display setting that hid the scheduled secret and used the duplicate-name error as evidence that it still existed.
+- Created a dedicated Lambda execution role trusted by the Lambda service.
+- Attached `AWSLambdaBasicExecutionRole` for logging and created a resource-scoped inline policy for one secret and one KMS key.
+- Deployed Python code using Boto3 to retrieve a fake secret without embedding AWS access keys.
+- Returned only the secret's field name, avoiding plaintext exposure in function output and logs.
+- Removed `kms:Decrypt` while retaining `GetSecretValue` and reproduced `AccessDeniedException: Access to KMS is not allowed`.
+- Restored the KMS statement and verified the workload recovered, completing allow → deny → allow under a workload identity.
+- Located the failed SDK call and stack trace in CloudWatch Logs.
+- Attributed the successful and denied calls in CloudTrail to the STS session for `security-lab-lambda-secrets-role/security-lab-secret-reader`.
+- Correlated the CloudWatch application error with CloudTrail's `AccessDenied` and `Access to KMS is not allowed` evidence.
+- Distinguished the permanent IAM role ARN from the temporary STS assumed-role session ARN.
+- Explained that Lambda logging depended on the execution role's CloudWatch Logs permissions rather than merely on using Lambda.
+- Deleted the function, workload role, and log group, then rescheduled the secret and KMS key for deletion.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Modern Identity | 5.25 | 5.5 | Transferred assumed-role and temporary-session concepts to a dedicated Lambda workload identity |
+| AWS / Cloud Security | 7.5 | 7.75 | Built and tested a least-privilege Lambda-to-Secrets-Manager/KMS integration with complete cleanup |
+| Cloud / Modern Incident Response | 7.75 | 8.0 | Correlated runtime failure evidence in CloudWatch with identity and authorization evidence in CloudTrail |
+| PKI / TLS / Secrets | 5.0 | 5.25 | Used a managed secret and customer-managed key from application code and reproduced the downstream decrypt failure |
+
+**Why the increases were limited:** The scenario transferred prior concepts to a new workload and produced cross-service evidence, but the workflow remained guided. The function did not implement caching, rotation, resource-policy constraints, encryption-context policy conditions, VPC endpoints, or independent troubleshooting from an unseen failure.
+
+**Cleanup state:** The Lambda function, dedicated execution role, and CloudWatch log group were deleted. The fake secret and KMS key are scheduled for deletion again. CloudTrail events remain as audit evidence.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -438,21 +474,21 @@ After each new dated learning note:
 
 1. Independently reconstruct AWS policy evaluation across trust, identity, resource, boundary, condition, and explicit-deny layers.
 2. Cross-account IAM and service control policies in a safe multi-account or simulated design.
-3. Workload identity and Kubernetes RBAC through hands-on labs.
-4. Independent cloud-incident reconstruction across GuardDuty, CloudTrail, Flow Logs, Config, workload logs, and identity-provider evidence.
+3. Kubernetes workload identity and RBAC through hands-on labs.
+4. Independently reconstruct a fresh cloud incident across GuardDuty, CloudTrail, Flow Logs, Config, workload logs, and identity-provider evidence.
 5. End-to-end DevSecOps pipeline implementation and finding remediation.
 
 ---
 
 ## Next Evidence Opportunity
 
-The next strongest roadmap evidence would be a **Lambda workload-identity and secrets lab**:
+The next strongest roadmap evidence would be a **Kubernetes workload identity and RBAC lab**:
 
-- Create a small Lambda function with a dedicated execution role.
-- Grant only the exact CloudWatch Logs and Secrets Manager/KMS permissions it needs.
-- Retrieve a fake secret at runtime without embedding credentials in code or environment variables.
-- Remove one required permission and diagnose the resulting CloudWatch error.
-- Inspect the function's assumed-role activity in CloudTrail.
-- Restore least privilege, verify success, and clean up the function, role, log group, and test secret.
+- Create a small local cluster and distinguish human identity from a pod service account.
+- Create a namespace-scoped Role and RoleBinding with one permitted API action.
+- Verify an allowed request and a denied request from a pod.
+- Inspect the mounted projected service-account token without exposing it in notes.
+- Remove or narrow one permission and diagnose the resulting API authorization failure.
+- Add a NetworkPolicy or runtime-control step after the identity path is understood.
 
-This would transfer today's key-and-secret concepts from a human SSO session to a serverless workload and strengthen the distinction between human identity, workload identity, and service authorization.
+This would address the largest remaining roadmap gap and transfer the newly demonstrated workload-identity model from AWS Lambda to Kubernetes.
