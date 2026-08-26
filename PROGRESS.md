@@ -1,7 +1,7 @@
 # Security Skills Progress Tracker
 
 **Baseline date:** August 11, 2026  
-**Last updated:** August 25, 2026  
+**Last updated:** August 26, 2026  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated notes contain demonstrated evidence. Discussion, recognition, or a correct guess alone does not increase a score.
 
@@ -12,12 +12,12 @@
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
 | Modern Identity | 4.0 | 5.25 | 8.0 | +1.25 | 2.75 |
-| AWS / Cloud Security | 5.0 | 7.25 | 8.0 | +2.25 | 0.75 |
+| AWS / Cloud Security | 5.0 | 7.5 | 8.0 | +2.5 | 0.5 |
 | Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
 | Cloud / Modern Incident Response | 6.0 | 7.75 | 8.0 | +1.75 | 0.25 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
-| PKI / TLS / Secrets | 4.5 | 4.5 | 7.0 | — | 2.5 |
+| PKI / TLS / Secrets | 4.5 | 5.0 | 7.0 | +0.5 | 2.0 |
 | Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
 | Vulnerability Management | 5.0 | 5.25 | 7.0 | +0.25 | 1.75 |
 | Enterprise Security Controls | 5.5 | 7.0 | 7.0 | +1.5 | 0.0 |
@@ -30,9 +30,9 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement so far is in **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. The Inspector lab added direct evidence for EC2 vulnerability-scanning coverage, SSM-backed workload management, package applicability validation, severity-versus-exposure prioritization, and agent-based versus agentless scanning. Vulnerability Management increased for the first time, but only slightly because the test instance produced no real finding and the remediation/verification lifecycle was not demonstrated. Enterprise Security Controls remains at the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided; independent reconstruction and real finding remediation are still necessary for larger increases.
+The strongest measured improvement remains **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. The KMS and Secrets Manager lab added the first substantial practical evidence for **PKI / TLS / Secrets**: customer-managed keys, key-policy delegation, scoped secret retrieval, KMS authorization failure testing, direct encryption/decryption, and encryption-context enforcement. AWS / Cloud Security also increased because the lab demonstrated a complete two-service authorization path and verified both allowed and denied outcomes. Enterprise Security Controls remains at the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided; independent reconstruction and transfer to a new workload are still necessary for larger increases.
 
-No score was increased for Kubernetes, DevSecOps, AppSec, PKI/TLS/secrets, or Linux operations because this lab did not provide sufficient new evidence for those areas.
+No score was increased for Kubernetes, DevSecOps, AppSec, Linux operations, Modern Identity, Cloud IR, Vulnerability Management, or Enterprise Controls because this lab did not provide sufficient new evidence beyond their current levels.
 
 ---
 
@@ -377,6 +377,38 @@ Demonstrated hands-on:
 
 ---
 
+### August 26, 2026 — KMS, Secrets Manager, and Encryption Context
+
+**Evidence:** [AWS Security Lab: KMS, Secrets Manager, and Encryption Context](aws-security/2026-08-26-kms-secrets-manager-authorization-encryption-context.md)
+
+Demonstrated hands-on:
+
+- Created a customer-managed symmetric KMS key and distinguished key administrators from key users.
+- Interpreted the key policy's account-root delegation statement without treating the root ARN as an ordinary signed-in root session.
+- Stored a fake application credential in Secrets Manager under a lab-specific path.
+- Created a scoped Identity Center permission set that allowed only `DescribeSecret`, `GetSecretValue`, `kms:Decrypt`, and `kms:DescribeKey` for the intended resources.
+- Verified successful secret retrieval and then removed `kms:Decrypt` to produce `AccessDeniedException: Access to KMS is not allowed`.
+- Restored the KMS permission and verified retrieval succeeded again, demonstrating the two authorization gates.
+- Established that Secrets Manager's `GetSecretValue` API returns usable plaintext after authorized decryption and does not expose the stored ciphertext as an alternative response.
+- Used direct KMS `Encrypt` and `Decrypt` operations with non-sensitive test text.
+- Verified that the matching encryption context `Purpose=KmsLab` succeeded and a mismatched context produced `InvalidCiphertextException`.
+- Distinguished encryption context from a salt: context is authenticated associated data and an authorization-bound label, not random input for password hashing.
+- Reconstructed the denied Secrets Manager call in CloudTrail using the assumed-role identity, action, secret ARN, version ID, and error.
+- Removed the Identity Center assignment and permission set, scheduled the secret and KMS key for deletion, and removed local test artifacts.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| AWS / Cloud Security | 7.25 | 7.5 | Demonstrated KMS/Secrets Manager integration, dual authorization, failure testing, scoped policy design, CloudTrail validation, and cleanup |
+| PKI / TLS / Secrets | 4.5 | 5.0 | First substantial hands-on evidence for managed keys, secret retrieval, decrypt authorization, ciphertext handling, and encryption context |
+
+**Why the increases were limited:** The workflow was guided, the stored value was deliberately fake, and the lab did not implement rotation, application SDK integration, cross-account access, grants, or independent reconstruction.
+
+**Cleanup state:** The permission-set assignment and permission set were removed. The secret and KMS key are scheduled for deletion, so they can remain visible during their recovery windows but are no longer active for normal use.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -414,13 +446,13 @@ After each new dated learning note:
 
 ## Next Evidence Opportunity
 
-The next strongest vulnerability-management evidence would be an **isolated ECR remediation lifecycle**:
+The next strongest roadmap evidence would be a **Lambda workload-identity and secrets lab**:
 
-- Push a deliberately old, non-running container image to a private ECR repository.
-- Observe real Inspector package findings.
-- Select one applicable finding and evaluate severity, exploitability, fix availability, and workload context.
-- Update the base image or affected package and rebuild.
-- Push the corrected image and verify how Inspector represents the new and old image findings.
-- Delete the test images and repository and review continuing Inspector cost state.
+- Create a small Lambda function with a dedicated execution role.
+- Grant only the exact CloudWatch Logs and Secrets Manager/KMS permissions it needs.
+- Retrieve a fake secret at runtime without embedding credentials in code or environment variables.
+- Remove one required permission and diagnose the resulting CloudWatch error.
+- Inspect the function's assumed-role activity in CloudTrail.
+- Restore least privilege, verify success, and clean up the function, role, log group, and test secret.
 
-This would demonstrate the missing finding → prioritize → remediate → verify cycle without exposing an intentionally vulnerable EC2 service to the internet.
+This would transfer today's key-and-secret concepts from a human SSO session to a serverless workload and strengthen the distinction between human identity, workload identity, and service authorization.
