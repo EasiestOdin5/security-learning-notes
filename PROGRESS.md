@@ -1,7 +1,7 @@
 # Security Skills Progress Tracker
 
 **Baseline date:** August 11, 2026  
-**Last updated:** August 26, 2026  
+**Last updated:** August 27, 2026
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated notes contain demonstrated evidence. Discussion, recognition, or a correct guess alone does not increase a score.
 
@@ -11,9 +11,9 @@
 
 | Skill area | Initial | Current | Goal | Change | Remaining gap |
 |---|---:|---:|---:|---:|---:|
-| Modern Identity | 4.0 | 5.5 | 8.0 | +1.5 | 2.5 |
+| Modern Identity | 4.0 | 5.75 | 8.0 | +1.75 | 2.25 |
 | AWS / Cloud Security | 5.0 | 7.75 | 8.0 | +2.75 | 0.25 |
-| Kubernetes Security | 5.0 | 5.0 | 8.0 | — | 3.0 |
+| Kubernetes Security | 5.0 | 5.5 | 8.0 | +0.5 | 2.5 |
 | Cloud / Modern Incident Response | 6.0 | 8.0 | 8.0 | +2.0 | 0.0 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
@@ -30,9 +30,9 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement remains **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. The Lambda lab transferred the prior KMS and Secrets Manager model from a human SSO session to a serverless workload: a dedicated execution role, temporary STS credentials, SDK retrieval, allow → deny → allow testing, and CloudWatch-to-CloudTrail correlation. This supports small increases in workload identity, AWS serverless security, secrets integration, and cloud investigation. Cloud / Modern Incident Response has reached the current roadmap goal, meaning the planned practical foundation has been demonstrated—not specialist mastery. The work remains guided; an independent reconstruction across a fresh scenario is still required before claiming stronger capability.
+The strongest measured improvement remains **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. The Minikube lab added the first substantial hands-on evidence for **Kubernetes Security**: namespace isolation, service-account workload identity, Role and RoleBinding mechanics, real in-pod API requests, allow → deny → allow testing, namespace boundaries, and projected-token hardening. Modern Identity also increased slightly because the workload-identity model was transferred from AWS Lambda to Kubernetes and connected to concrete authentication and authorization outcomes. Cloud / Modern Incident Response and Enterprise Security Controls remain at their current roadmap goals, meaning the planned practical foundations have been demonstrated—not specialist mastery.
 
-No score was increased for Kubernetes, DevSecOps, AppSec, Linux operations, Vulnerability Management, or Enterprise Controls because this lab did not provide sufficient new evidence beyond their current levels.
+No score was increased for AWS, Cloud IR, DevSecOps, AppSec, PKI/TLS/Secrets, Linux operations, Vulnerability Management, or Enterprise Controls because this local lab did not provide sufficient new evidence beyond their current levels.
 
 ---
 
@@ -445,6 +445,45 @@ Demonstrated hands-on:
 
 ---
 
+### August 26–27, 2026 — Kubernetes Workload Identity, RBAC, and Token Hardening
+
+**Evidence:** [Kubernetes Security Lab: Workload Identity, RBAC, and Service-Account Token Hardening](kubernetes-security/2026-08-27-minikube-workload-identity-rbac.md)
+
+Demonstrated hands-on:
+
+- Started the existing Minikube cluster with the Docker driver and verified the active context and ready control-plane node.
+- Identified and preserved existing Kubernetes, Falco, DVWA, and attack-pod workloads.
+- Created an isolated `rbac-lab` namespace.
+- Created the `lab-reader` service account and verified that it initially lacked custom pod-read permissions.
+- Created a namespace-scoped `pod-reader` Role permitting only `get` and `list` on pods.
+- Proved that an unbound Role granted nothing.
+- Created `lab-reader-pod-reader` as the RoleBinding connecting the service account to the Role and observed authorization change from `no` to `yes`.
+- Created a real Alpine pod using `lab-reader` and verified the pod's service-account assignment.
+- Located the projected token, CA certificate, and namespace files without displaying the token.
+- Used the mounted token and CA certificate to call `kubernetes.default.svc` from inside the pod.
+- Received a successful `PodList` response for the permitted pods endpoint.
+- Received `403 Forbidden` for the non-permitted Secrets endpoint and distinguished successful authentication from failed authorization.
+- Deleted the RoleBinding and reproduced `403` on the previously allowed pod-list request while leaving the Role and service account intact.
+- Recreated the RoleBinding and restored the successful request, completing allow → deny → allow.
+- Verified that the namespace-scoped Role did not grant pod access in `default`.
+- Inspected the live Role and RoleBinding and mapped subject, role reference, resources, and verbs.
+- Created a second pod with `automountServiceAccountToken: false` and proved that the service-account credential directory was absent.
+- Distinguished credential removal from network isolation: the tokenless pod could potentially reach the API server but could not normally authenticate as `lab-reader`.
+- Deleted the namespace, removing both pods, service account, Role, and RoleBinding without affecting other namespaces.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Modern Identity | 5.5 | 5.75 | Transferred workload-identity, short-lived credential, authentication, and authorization concepts from Lambda to Kubernetes |
+| Kubernetes Security | 5.0 | 5.5 | First broad hands-on evidence for namespaces, service accounts, RBAC, API requests, failure testing, scope boundaries, and token hardening |
+
+**Why the increases were limited:** The workflow was guided, several identity and API concepts required detailed clarification, and the lab used a single-node local cluster. It did not cover ClusterRoles, groups, admission policy, NetworkPolicy, Pod Security Standards, audit logs, node authorization, EKS integration, or independent reconstruction.
+
+**Cleanup state:** The `rbac-lab` namespace and all contained resources were deleted. The existing Minikube cluster and resources in `default`, `falco`, and `kube-system` were preserved.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -474,7 +513,7 @@ After each new dated learning note:
 
 1. Independently reconstruct AWS policy evaluation across trust, identity, resource, boundary, condition, and explicit-deny layers.
 2. Cross-account IAM and service control policies in a safe multi-account or simulated design.
-3. Kubernetes workload identity and RBAC through hands-on labs.
+3. Kubernetes NetworkPolicy, Pod Security Standards, ClusterRoles, and runtime-control integration through hands-on labs.
 4. Independently reconstruct a fresh cloud incident across GuardDuty, CloudTrail, Flow Logs, Config, workload logs, and identity-provider evidence.
 5. End-to-end DevSecOps pipeline implementation and finding remediation.
 
@@ -482,13 +521,14 @@ After each new dated learning note:
 
 ## Next Evidence Opportunity
 
-The next strongest roadmap evidence would be a **Kubernetes workload identity and RBAC lab**:
+The next strongest roadmap evidence would be a **Kubernetes NetworkPolicy and pod-hardening lab**:
 
-- Create a small local cluster and distinguish human identity from a pod service account.
-- Create a namespace-scoped Role and RoleBinding with one permitted API action.
-- Verify an allowed request and a denied request from a pod.
-- Inspect the mounted projected service-account token without exposing it in notes.
-- Remove or narrow one permission and diagnose the resulting API authorization failure.
-- Add a NetworkPolicy or runtime-control step after the identity path is understood.
+- Create two isolated application pods and one client pod in a dedicated namespace.
+- Demonstrate the default allow-all pod-network behavior.
+- Apply default-deny ingress and egress NetworkPolicies.
+- Add narrowly scoped allow rules using pod and namespace selectors.
+- Test allowed and denied traffic paths directly from the pods.
+- Apply Pod Security Admission labels or equivalent restricted workload settings.
+- Compare preventive policy failures with Falco runtime evidence where applicable.
 
-This would address the largest remaining roadmap gap and transfer the newly demonstrated workload-identity model from AWS Lambda to Kubernetes.
+This would build on the completed identity/RBAC layer by adding workload network isolation and pod-level preventive controls.
