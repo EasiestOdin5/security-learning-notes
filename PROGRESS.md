@@ -1,7 +1,7 @@
 # Security Skills Progress Tracker
 
 **Baseline date:** August 11, 2026  
-**Last updated:** August 27, 2026
+**Last updated:** September 1, 2026
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated notes contain demonstrated evidence. Discussion, recognition, or a correct guess alone does not increase a score.
 
@@ -13,12 +13,12 @@
 |---|---:|---:|---:|---:|---:|
 | Modern Identity | 4.0 | 5.75 | 8.0 | +1.75 | 2.25 |
 | AWS / Cloud Security | 5.0 | 7.75 | 8.0 | +2.75 | 0.25 |
-| Kubernetes Security | 5.0 | 5.5 | 8.0 | +0.5 | 2.5 |
+| Kubernetes Security | 5.0 | 6.25 | 8.0 | +1.25 | 1.75 |
 | Cloud / Modern Incident Response | 6.0 | 8.0 | 8.0 | +2.0 | 0.0 |
 | DevSecOps / CI-CD Security | 5.5 | 5.5 | 7.5 | — | 2.0 |
 | Application Security | 6.0 | 6.0 | 7.5 | — | 1.5 |
 | PKI / TLS / Secrets | 4.5 | 5.25 | 7.0 | +0.75 | 1.75 |
-| Linux Security Operations | 6.0 | 6.0 | 7.0 | — | 1.0 |
+| Linux Security Operations | 6.0 | 6.25 | 7.0 | +0.25 | 0.75 |
 | Vulnerability Management | 5.0 | 5.25 | 7.0 | +0.25 | 1.75 |
 | Enterprise Security Controls | 5.5 | 7.0 | 7.0 | +1.5 | 0.0 |
 
@@ -30,9 +30,9 @@ The chart uses the same 0–10 evidence-based scores as the table. Moving outwar
 
 ### Overall interpretation
 
-The strongest measured improvement remains **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. The Minikube lab added the first substantial hands-on evidence for **Kubernetes Security**: namespace isolation, service-account workload identity, Role and RoleBinding mechanics, real in-pod API requests, allow → deny → allow testing, namespace boundaries, and projected-token hardening. Modern Identity also increased slightly because the workload-identity model was transferred from AWS Lambda to Kubernetes and connected to concrete authentication and authorization outcomes. Cloud / Modern Incident Response and Enterprise Security Controls remain at their current roadmap goals, meaning the planned practical foundations have been demonstrated—not specialist mastery.
+The strongest measured improvement remains **AWS / Cloud Security**, with supporting gains in **Modern Identity**, **Cloud / Modern Incident Response**, and **Enterprise Security Controls**. Three local Kubernetes labs now provide practical evidence across workload identity, RBAC, API authorization, token minimization, Calico-enforced NetworkPolicy, Service discovery, workload security contexts, and namespace-level Pod Security Admission. The latest lab moved hardening from voluntary manifest settings to admission-time governance through baseline/restricted comparison, enforce/warn/audit modes, non-retroactive tightening, and version pinning. Cloud / Modern Incident Response and Enterprise Security Controls remain at their current roadmap goals, meaning the planned practical foundations have been demonstrated—not specialist mastery.
 
-No score was increased for AWS, Cloud IR, DevSecOps, AppSec, PKI/TLS/Secrets, Linux operations, Vulnerability Management, or Enterprise Controls because this local lab did not provide sufficient new evidence beyond their current levels.
+No score was increased for Modern Identity, AWS, Cloud IR, DevSecOps, AppSec, PKI/TLS/Secrets, Vulnerability Management, or Enterprise Controls because this lab did not provide sufficient new evidence beyond their current levels.
 
 ---
 
@@ -484,6 +484,69 @@ Demonstrated hands-on:
 
 ---
 
+### August 27–30, 2026 — Kubernetes NetworkPolicy and Pod Hardening
+
+**Evidence:** [Kubernetes Security Lab: NetworkPolicy and Pod Hardening](kubernetes-security/2026-08-30-networkpolicy-pod-hardening.md)
+
+Demonstrated hands-on:
+
+- Inspected the existing bridge CNI and avoided assuming that NetworkPolicy would be enforced.
+- Created a separate Minikube profile with Calico and verified its node and controller components.
+- Distinguished clusters, namespaces, pods, containers, CNI networking, Services, and Kubernetes DNS through a working topology.
+- Created an Nginx destination and two independently labeled curl client pods.
+- Created a Service and reached it through the same-namespace DNS name `http://web`.
+- Proved default connectivity by reaching Nginx from both clients before policy isolation.
+- Applied an ingress policy with no allow rules and observed both clients time out.
+- Allowed only `access=allowed` sources on TCP/80 and observed the allowed client succeed while the blocked client failed.
+- Correctly explained that standard NetworkPolicy is additive and allow-based rather than an ordered explicit-deny firewall model.
+- Verified that the original Nginx container ran as UID 0 and distinguished container root from automatic node root.
+- Created a separate hardened pod with non-root UID/GID, all capabilities dropped, privilege escalation disabled, read-only root filesystem, runtime-default seccomp, and ServiceAccount-token automount disabled.
+- Verified the controls from the running container: UID/GID 1000, failed root-filesystem write, absent credential directory, zero effective capabilities, `NoNewPrivs: 1`, and seccomp mode 2.
+- Deleted the lab namespace and Calico-enabled Minikube profile, then restored the original `minikube` context.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Kubernetes Security | 5.5 | 6.0 | Added broad hands-on evidence for CNI selection, Service discovery, enforced NetworkPolicy, traffic testing, and verified pod security contexts |
+| Linux Security Operations | 6.0 | 6.25 | Directly inspected and verified Linux identity, mount, capability, privilege-escalation, and syscall-filter controls inside a container |
+
+**Why the increases were limited:** The workflow remained guided and used a single-node local cluster. The exercise did not include egress policy, namespace selectors, DNS-specific allowances, Pod Security Admission, admission-policy enforcement, policy logging, multi-node behavior, or independent reconstruction from an unseen requirement.
+
+**Cleanup state:** The `netpol-lab` namespace and its four pods, Service, and NetworkPolicies were deleted. The separate Calico Minikube profile was deleted, and the original `minikube` context was restored.
+
+---
+
+### August 31–September 1, 2026 — Kubernetes Pod Security Admission
+
+**Evidence:** [Kubernetes Security Lab: Pod Security Admission](kubernetes-security/2026-09-01-pod-security-admission.md)
+
+Demonstrated hands-on:
+
+- Created separate namespaces and activated built-in baseline and restricted Pod Security Standards through labels.
+- Submitted a privileged BusyBox pod and observed admission-time rejection under baseline before any workload started.
+- Created an unhardened pod under baseline, verified it ran as root, and submitted the same manifest to restricted to identify four missing controls.
+- Added non-root execution, runtime-default seccomp, disabled privilege escalation, and dropped capabilities until the pod passed restricted admission and ran as UID 1000.
+- Configured baseline enforcement with restricted warning mode and observed a noncompliant pod admitted with immediate developer warnings.
+- Added restricted audit evaluation and distinguished audit annotations from a complete audit-log collection pipeline.
+- Tightened a namespace from baseline to restricted, observed warnings for existing violations, and verified that existing pods were not retroactively removed.
+- Repeated an unhardened creation after tightening and observed restricted rejection.
+- Pinned enforcement, warning, and audit policy evaluation to Kubernetes v1.35.
+- Inspected final namespace labels and correctly distinguished namespace resource names from `key=value` label assignments.
+- Deleted both namespaces and their pods and removed the local manifests.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Kubernetes Security | 6.0 | 6.25 | Added direct evidence for admission-time governance, Pod Security Standards, enforce/warn/audit behavior, policy migration, and version pinning |
+
+**Why the increase was limited:** The workflow remained guided and used built-in standards on a local single-node cluster. Kubernetes audit events were not collected and inspected, no custom admission policy was implemented, and the controls were not reconstructed independently from a new requirement.
+
+**Cleanup state:** The `psa-baseline` and `psa-restricted` namespaces and all contained pods and labels were deleted. Local test manifests were removed, and the original Minikube cluster remained intact.
+
+---
+
 ## Evidence Rules for Future Daily Updates
 
 After each new dated learning note:
@@ -513,7 +576,7 @@ After each new dated learning note:
 
 1. Independently reconstruct AWS policy evaluation across trust, identity, resource, boundary, condition, and explicit-deny layers.
 2. Cross-account IAM and service control policies in a safe multi-account or simulated design.
-3. Kubernetes NetworkPolicy, Pod Security Standards, ClusterRoles, and runtime-control integration through hands-on labs.
+3. Kubernetes ClusterRoles, egress/DNS policy, and runtime-control integration through hands-on labs.
 4. Independently reconstruct a fresh cloud incident across GuardDuty, CloudTrail, Flow Logs, Config, workload logs, and identity-provider evidence.
 5. End-to-end DevSecOps pipeline implementation and finding remediation.
 
@@ -521,14 +584,13 @@ After each new dated learning note:
 
 ## Next Evidence Opportunity
 
-The next strongest roadmap evidence would be a **Kubernetes NetworkPolicy and pod-hardening lab**:
+The next strongest roadmap evidence would be a **Kubernetes egress and DNS NetworkPolicy lab**:
 
-- Create two isolated application pods and one client pod in a dedicated namespace.
-- Demonstrate the default allow-all pod-network behavior.
-- Apply default-deny ingress and egress NetworkPolicies.
-- Add narrowly scoped allow rules using pod and namespace selectors.
-- Test allowed and denied traffic paths directly from the pods.
-- Apply Pod Security Admission labels or equivalent restricted workload settings.
-- Compare preventive policy failures with Falco runtime evidence where applicable.
+- Recreate a Calico-enabled isolated cluster profile.
+- Demonstrate unrestricted outbound DNS and HTTP behavior.
+- Apply default-deny egress and observe both DNS and application traffic fail.
+- Restore only required DNS access to CoreDNS.
+- Add a narrowly scoped application egress exception and verify allowed and denied destinations.
+- Reconstruct the traffic path with less step-by-step guidance.
 
-This would build on the completed identity/RBAC layer by adding workload network isolation and pod-level preventive controls.
+This would extend the completed ingress-policy work to outbound dependency control and the special DNS allowances that egress isolation requires.
