@@ -28,31 +28,31 @@
 <line class="grid" x1="600" y1="500" x2="353.1" y2="329.6" />
 <line class="grid" x1="600" y1="500" x2="460.6" y2="234.4" />
 <polygon class="goal" points="600.0,260.0 711.5,287.5 797.5,363.7 838.3,471.1 824.4,585.1 759.1,679.6 657.4,733.0 546.2,718.5 450.8,668.4 389.6,579.8 346.9,469.3 414.8,372.2 495.4,300.8"/>
-<polygon class="current" points="600.0,410.0 648.8,407.0 686.4,440.4 681.9,490.1 670.1,526.6 684.5,595.4 614.4,558.3 585.6,558.3 570.2,533.7 557.9,516.0 473.4,484.6 513.6,440.4 579.1,460.2"/>
+<polygon class="current" points="600.0,410.0 648.8,407.0 692.6,436.1 681.9,490.1 670.1,526.6 694.5,606.7 614.4,558.3 585.6,558.3 570.2,533.7 557.9,516.0 466.0,483.7 513.6,440.4 579.1,460.2"/>
 <circle class="dot" cx="600.0" cy="410.0" r="4"/>
 <circle class="dot" cx="648.8" cy="407.0" r="4"/>
-<circle class="dot" cx="686.4" cy="440.4" r="4"/>
+<circle class="dot" cx="692.6" cy="436.1" r="4"/>
 <circle class="dot" cx="681.9" cy="490.1" r="4"/>
 <circle class="dot" cx="670.1" cy="526.6" r="4"/>
-<circle class="dot" cx="684.5" cy="595.4" r="4"/>
+<circle class="dot" cx="694.5" cy="606.7" r="4"/>
 <circle class="dot" cx="614.4" cy="558.3" r="4"/>
 <circle class="dot" cx="585.6" cy="558.3" r="4"/>
 <circle class="dot" cx="570.2" cy="533.7" r="4"/>
 <circle class="dot" cx="557.9" cy="516.0" r="4"/>
-<circle class="dot" cx="473.4" cy="484.6" r="4"/>
+<circle class="dot" cx="466.0" cy="483.7" r="4"/>
 <circle class="dot" cx="513.6" cy="440.4" r="4"/>
 <circle class="dot" cx="579.1" cy="460.2" r="4"/>
 <text class="label" x="600.0" y="76.0" text-anchor="middle"><tspan x="600.0">LLM API Fundamentals</tspan><tspan class="score" x="600.0" dy="17">3/10</tspan></text>
 <text class="label" x="795.2" y="120.1" text-anchor="start"><tspan x="795.2" dy="0">Structured</tspan><tspan x="795.2" dy="18">Outputs / Schemas</tspan><tspan class="score" x="795.2" dy="17">3.5/10</tspan></text>
-<text class="label" x="945.7" y="257.4" text-anchor="start"><tspan x="945.7">Tool / Function Calling</tspan><tspan class="score" x="945.7" dy="17">3.5/10</tspan></text>
+<text class="label" x="945.7" y="257.4" text-anchor="start"><tspan x="945.7">Tool / Function Calling</tspan><tspan class="score" x="945.7" dy="17">3.75/10</tspan></text>
 <text class="label" x="1016.9" y="445.4" text-anchor="start"><tspan x="1016.9">Agent Orchestration</tspan><tspan class="score" x="1016.9" dy="17">2.75/10</tspan></text>
 <text class="label" x="992.7" y="640.9" text-anchor="start"><tspan x="992.7" dy="0">State Machines /</tspan><tspan x="992.7" dy="18">Workflow Control</tspan><tspan class="score" x="992.7" dy="17">2.5/10</tspan></text>
-<text class="label" x="878.5" y="806.4" text-anchor="start"><tspan x="878.5" dy="0">Deterministic Gates</tspan><tspan x="878.5" dy="18">/ Policy Controls</tspan><tspan class="score" x="878.5" dy="17">4.25/10</tspan></text>
+<text class="label" x="878.5" y="806.4" text-anchor="start"><tspan x="878.5" dy="0">Deterministic Gates</tspan><tspan x="878.5" dy="18">/ Policy Controls</tspan><tspan class="score" x="878.5" dy="17">4.75/10</tspan></text>
 <text class="label" x="700.5" y="903.8" text-anchor="start"><tspan x="700.5">Evaluation / Rubrics</tspan><tspan class="score" x="700.5" dy="17">2/10</tspan></text>
 <text class="label" x="499.5" y="899.8" text-anchor="end"><tspan x="499.5" dy="0">Self-Correction</tspan><tspan x="499.5" dy="18">/ Bounded Retry</tspan><tspan class="score" x="499.5" dy="17">2/10</tspan></text>
 <text class="label" x="321.5" y="810.4" text-anchor="end"><tspan x="321.5">RAG / Retrieval</tspan><tspan class="score" x="321.5" dy="17">1.5/10</tspan></text>
 <text class="label" x="207.3" y="640.9" text-anchor="end"><tspan x="207.3" dy="0">Agent Memory /</tspan><tspan x="207.3" dy="18">Persistent State</tspan><tspan class="score" x="207.3" dy="17">1.5/10</tspan></text>
-<text class="label" x="183.1" y="441.4" text-anchor="end"><tspan x="183.1" dy="0">Agent Security /</tspan><tspan x="183.1" dy="18">Threat Modeling</tspan><tspan class="score" x="183.1" dy="17">4.25/10</tspan></text>
+<text class="label" x="183.1" y="441.4" text-anchor="end"><tspan x="183.1" dy="0">Agent Security /</tspan><tspan x="183.1" dy="18">Threat Modeling</tspan><tspan class="score" x="183.1" dy="17">4.5/10</tspan></text>
 <text class="label" x="254.3" y="253.4" text-anchor="end"><tspan x="254.3" dy="0">AI Application</tspan><tspan x="254.3" dy="18">Deployment</tspan><tspan class="score" x="254.3" dy="17">3.5/10</tspan></text>
 <text class="label" x="404.8" y="120.1" text-anchor="end"><tspan x="404.8" dy="0">AI Observability</tspan><tspan x="404.8" dy="18">/ Tracing / Cost</tspan><tspan class="score" x="404.8" dy="17">1.5/10</tspan></text>
 <text class="ring-label" x="605" y="454.0">2</text>
