@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 1, 2026  
+**Last updated:** September 2, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when a dated lab contains demonstrated implementation evidence. Discussion, recognition, architecture ideas, or correct conceptual answers alone do not increase a score.
@@ -42,15 +42,15 @@ The long-term target is a security investigation agent that can collect evidence
 |---|---:|---:|---:|---:|---|
 | LLM API Fundamentals | 2.0 | 3.0 | 8.0 | +1.0 | Direct Responses API use, structured parsing, function-call output continuation, environment-key handling, FastAPI integration, API-error handling |
 | Structured Outputs / Schemas | 2.0 | 3.5 | 8.0 | +1.5 | Pydantic API/LLM schemas plus function-tool JSON Schema and independent application-side argument validation |
-| Tool / Function Calling | 2.0 | 3.5 | 8.0 | +1.5 | Implemented custom read-only tools, model-selected multi-tool calls, explicit execution, function_call_output, call_id correlation, and dynamic dispatch |
+| Tool / Function Calling | 2.0 | 3.75 | 8.0 | +1.75 | Read-only and state-changing custom tools, model-selected calls, explicit execution, dynamic dispatch, result return, and approval-gated action requests |
 | Agent Orchestration | 2.5 | 2.75 | 8.0 | +0.25 | Demonstrated a guided model → tools → model control loop, but no reusable stateful orchestrator yet |
 | State Machines / Workflow Control | 2.5 | 2.5 | 8.0 | — | No explicit state machine yet |
-| Deterministic Gates / Policy Controls | 3.0 | 4.25 | 8.0 | +1.25 | Input/review gates plus tool execution allowlist, Pydantic argument validation, and separate valid-but-disallowed policy validation |
-| Evaluation / Rubrics | 2.0 | 2.0 | 8.0 | — | Manual failure/insufficient-evidence tests exist, but no repeatable evaluation harness |
-| Self-Correction / Bounded Retry | 2.0 | 2.0 | 7.5 | — | Retry concept discussed but not implemented |
+| Deterministic Gates / Policy Controls | 3.0 | 4.75 | 8.0 | +1.75 | Input/review gates, execution allowlist, argument/policy validation, state-changing approval metadata, pending actions, and explicit approve/reject paths |
+| Evaluation / Rubrics | 2.0 | 2.0 | 8.0 | — | Manual failure tests exist, but no repeatable evaluation harness |
+| Self-Correction / Bounded Retry | 2.0 | 2.0 | 7.5 | — | Retry/loop risks observed but bounded retry not implemented |
 | RAG / Retrieval | 1.5 | 1.5 | 7.5 | — | Not implemented |
-| Agent Memory / Persistent State | 1.5 | 1.5 | 7.5 | — | Not implemented |
-| Agent Security / Threat Modeling | 3.5 | 4.25 | 8.5 | +0.75 | Prompt-injection gate plus executable-tool allowlisting, exposed-but-unauthorized tool test, hard-denial reasoning, and separation of model restraint from enforcement |
+| Agent Memory / Persistent State | 1.5 | 1.5 | 7.5 | — | In-memory pending action state was used, but persistent agent memory/state is not implemented |
+| Agent Security / Threat Modeling | 3.5 | 4.5 | 8.5 | +1.0 | Prompt-injection and unauthorized-tool tests plus scoped human approval, one-time action execution, rejection, and model-vs-authorization separation |
 | AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 container deployment remains demonstrated; updated LLM/tool-enabled service has not yet been redeployed in Docker |
 | AI Observability / Tracing / Cost | 1.5 | 1.5 | 7.5 | — | No token/cost/latency tracing yet |
 
@@ -99,8 +99,6 @@ Demonstrated hands-on:
 | Deterministic Gates / Policy Controls | 3.0 | 3.25 | Demonstrated deterministic input rejection before downstream application logic |
 | AI Application Deployment | 3.0 | 3.5 | Built and ran a reproducible containerized service that will become the agent boundary |
 
-**Why the increases were limited:** The lab was guided and contained no LLM call, model-selected action, orchestration, evaluation harness, or retry controller.
-
 ---
 
 ### September 1, 2026 — Lab 2: Structured LLM Alert Triage
@@ -110,38 +108,27 @@ Demonstrated hands-on:
 Demonstrated hands-on:
 
 - Installed and used the OpenAI Python SDK.
-- Made a direct Responses API call and observed free-form output.
-- Explained how `OpenAI()` uses `OPENAI_API_KEY` and how a custom environment variable can be passed explicitly.
-- Used separate `system` and `user` messages and understood their roles.
-- Defined a Pydantic `AlertTriage` model as the LLM structured-output contract.
-- Used `Literal`, boolean, bounded confidence values, and field descriptions.
-- Connected the validated FastAPI `Alert` object to the LLM call.
-- Returned parsed structured model output through `/alert`.
-- Tested conflicting incoming severity and explicitly defined input severity as a non-authoritative hint.
-- Observed small run-to-run confidence variation.
-- Tested vague evidence and observed reduced confidence.
-- Added a deterministic `< 0.70` confidence review gate.
-- Added `APIError` handling and deliberately tested an invalid API key.
-- Diagnosed an HTTP 500 caused by a missing `APIError` import, then verified the controlled `llm_api_failure` path.
-- Sent prompt-injection text inside untrusted alert data.
-- Identified that the first policy incorrectly treated high confidence as sufficient for `accepted`.
-- Added `prompt_injection_detected: bool` as an explicit structured signal.
-- Added a deterministic hard review gate for prompt injection.
-- Verified the malicious input was routed to `needs_review` regardless of its high confidence.
-- Observed semantic overreach when a credential-theft alert was classified more specifically as an LSASS-dump event without supporting evidence.
+- Made direct Responses API calls and observed free-form output.
+- Used system/user roles and environment-based API key handling.
+- Defined a Pydantic `AlertTriage` model as an LLM structured-output contract.
+- Added typed fields, bounded confidence, and field descriptions.
+- Integrated validated FastAPI alert input with the LLM.
+- Added deterministic low-confidence and API-failure gates.
+- Tested an invalid API key and fixed a missing `APIError` import.
+- Tested prompt injection inside untrusted alert data.
+- Added an explicit `prompt_injection_detected` signal and deterministic hard review gate.
+- Observed unsupported semantic specificity despite structurally valid output.
 
 **Score changes:**
 
 | Skill area | Before | After | Reason |
 |---|---:|---:|---|
 | LLM API Fundamentals | 2.0 | 2.75 | Direct SDK/API use was integrated into the application and failure behavior was tested |
-| Structured Outputs / Schemas | 2.25 | 3.25 | Implemented real LLM structured output with typed constraints, field semantics, and security-relevant signals |
+| Structured Outputs / Schemas | 2.25 | 3.25 | Implemented real LLM structured output with typed constraints and security-relevant signals |
 | Deterministic Gates / Policy Controls | 3.25 | 3.75 | Added deterministic low-confidence, API-failure, and prompt-injection workflow controls |
-| Agent Security / Threat Modeling | 3.5 | 4.0 | Performed an actual prompt-injection test and corrected a policy weakness exposed by the test |
+| Agent Security / Threat Modeling | 3.5 | 4.0 | Performed a prompt-injection test and corrected a policy weakness exposed by the test |
 
-**Why the increases are limited:** The lab was guided and still used a single model call with no tools, explicit agent state machine, retry controller, formal evaluation suite, RAG, or persistent state. The updated LLM-enabled service was not redeployed into Docker, so AI Application Deployment remains unchanged from Lab 1.
-
-**Important limitation discovered:** Structured output guarantees shape much better than prose, but it does not guarantee semantic correctness. The unsupported `credential_theft_lsass_dump` specificity is direct evidence that later evaluation and evidence-grounding controls are necessary.
+**Important limitation discovered:** Structured output constrains shape but does not guarantee semantic correctness.
 
 ---
 
@@ -151,43 +138,70 @@ Demonstrated hands-on:
 
 Demonstrated hands-on:
 
-- Defined custom read-only Python investigation functions.
-- Exposed function definitions to the model with names, descriptions, strict JSON Schema parameters, and `tools=tools`.
-- Observed actual `function_call` items and distinguished model request from function execution.
+- Defined and exposed custom read-only investigation functions.
+- Used strict JSON Schema function definitions with `tools=tools`.
+- Observed actual `function_call` items and distinguished request from execution.
 - Explicitly executed model-requested Python functions.
-- Returned results as `function_call_output` associated by `call_id`.
-- Continued the interaction using `previous_response_id`.
-- Added a second investigation function and observed the model independently request both tools for one case.
-- Replaced hard-coded dispatch with a dynamic tool registry.
-- Collected multiple tool outputs and returned them together for model correlation.
-- Diagnosed `json.dump()` versus `json.dumps()` after a serialization error.
+- Returned `function_call_output` associated by `call_id` and continued with `previous_response_id`.
+- Added multiple tools and dynamic dispatch.
 - Treated the execution registry as a deterministic allowlist.
-- Exposed a temporary `delete_user` schema while intentionally omitting any executable implementation; verified Python blocked the request.
-- Distinguished model-generated denial explanation from the deterministic authorization decision.
-- Reasoned that terminal hard denials can end in Python rather than being reinterpreted by the LLM.
-- Associated each executable function with a Pydantic argument model.
-- Validated tool arguments independently with `model_validate_json()` before function execution.
-- Tested an obviously invalid IP that the model rejected before requesting a tool.
-- Tested a malformed-but-plausible IP that the model did request and Pydantic then blocked.
-- Added a separate `validate_ip_policy()` gate for syntactically valid but non-global IP addresses.
-- Verified `10.0.0.4` passed IP syntax validation but was blocked by application policy.
-- Kept `validate_ip_policy()` outside `tools=[]` because it is an enforcement control, not an LLM capability.
-- Added an insufficient-evidence user path and verified the model did not invent an IP address, reputation result, or compromise claim.
+- Exposed an unauthorized temporary tool and verified Python blocked execution.
+- Added Pydantic execution-time argument models.
+- Tested malformed IP arguments and application-side validation.
+- Added `validate_ip_policy()` for syntactically valid but policy-disallowed IPs.
+- Verified an insufficient-evidence path without invented evidence.
 
 **Score changes:**
 
 | Skill area | Before | After | Reason |
 |---|---:|---:|---|
-| LLM API Fundamentals | 2.75 | 3.0 | Demonstrated the Responses API function-call continuation pattern using `call_id`, `function_call_output`, and `previous_response_id` |
-| Structured Outputs / Schemas | 3.25 | 3.5 | Added strict function-argument JSON schemas and independent Pydantic execution-time argument validation |
-| Tool / Function Calling | 2.0 | 3.5 | Implemented the full read-only tool lifecycle, multiple tool choices, dynamic dispatch, result return, and evidence correlation |
-| Agent Orchestration | 2.5 | 2.75 | Implemented a guided two-stage model/tool/model loop, but not yet a reusable stateful orchestrator |
-| Deterministic Gates / Policy Controls | 3.75 | 4.25 | Added executable-tool allowlisting, argument validation, and a distinct valid-but-policy-disallowed gate |
-| Agent Security / Threat Modeling | 4.0 | 4.25 | Executed an exposed-but-unauthorized tool test and preserved deterministic authorization as the security boundary |
+| LLM API Fundamentals | 2.75 | 3.0 | Demonstrated function-call continuation using `call_id`, `function_call_output`, and `previous_response_id` |
+| Structured Outputs / Schemas | 3.25 | 3.5 | Added strict function-argument schemas and independent Pydantic execution-time validation |
+| Tool / Function Calling | 2.0 | 3.5 | Implemented the full read-only tool lifecycle, multiple tool choices, dynamic dispatch, and result return |
+| Agent Orchestration | 2.5 | 2.75 | Implemented a guided model/tool/model loop, but not a reusable stateful orchestrator |
+| Deterministic Gates / Policy Controls | 3.75 | 4.25 | Added executable-tool allowlisting, argument validation, and valid-but-policy-disallowed checks |
+| Agent Security / Threat Modeling | 4.0 | 4.25 | Executed an exposed-but-unauthorized tool test and preserved deterministic authorization |
 
-**Why the increases are limited:** The loop remains small and guided. The tools are mocked/read-only, there is no state machine, no user/role-aware authorization object, no formal evaluation harness, no bounded retry, no persistent state, and no deployment/observability work for the tool-enabled version.
+**Important distinction demonstrated:** Model-facing tool availability, executable authorization, schema validity, and application policy are separate concerns.
 
-**Important distinction demonstrated:** Model-facing tool availability, executable authorization, schema validity, and application policy are four separate concerns. A model voluntarily refusing a bad call is useful behavior, but only deterministic application-side checks count as enforcement.
+---
+
+### September 2, 2026 — Lab 4: Policy-Gated Tools
+
+**Evidence:** [AI Engineering Lab 4 — Policy-Gated Tools](2026-09-02-lab-04-policy-gated-tools.md)
+
+Demonstrated hands-on:
+
+- Added a mock state-changing `disable_user(user)` tool.
+- Changed the tool registry from tuples to named policy dictionaries.
+- Added `requires_approval` metadata and distinguished read-only from approval-required execution.
+- Exposed `disable_user` to the model while keeping authorization in Python.
+- Verified the model could request `disable_user` but Python held it at `PENDING APPROVAL`.
+- Tested an initial deterministic approval switch with both `False` and `True` paths.
+- Identified that a global tool-level approval was overly broad.
+- Scoped approval to tool + arguments so approval for Alice did not approve Bob.
+- Demonstrated one-time approval consumption within the same Python process.
+- Replaced pre-approval with `pending_actions` that stores the exact validated requested action.
+- Added explicit `approve_action()` and `reject_action()` paths.
+- Verified approval executes the stored action and rejection removes it without execution.
+- Replaced tuple approval keys with UUID request IDs to uniquely identify action instances.
+- Corrected a test still using the old tuple key after the UUID migration.
+- Verified final UUID-based approval and rejection flows.
+- Tested a realistic alert and observed the model investigate before proposing a state change.
+- Briefly explored a multi-turn loop, observed repeated tool requests, and identified the safety/design problems of ad hoc retry/loop controls.
+- Deliberately removed `while True`, duplicate-call handling, step limits, and repeat-policy logic from Lab 4 because they belong in later orchestration/state-machine work.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Tool / Function Calling | 3.5 | 3.75 | Extended tool use from read-only evidence gathering to a state-changing action request with controlled execution |
+| Deterministic Gates / Policy Controls | 4.25 | 4.75 | Implemented approval-required policy metadata, exact pending actions, scoped/one-time approval, explicit approval/rejection, and UUID action identity |
+| Agent Security / Threat Modeling | 4.25 | 4.5 | Demonstrated that model intent does not grant authorization and that a human-approved exact action remains the execution boundary |
+
+**Why other scores did not increase:** The multi-turn loop experiment was intentionally removed. There is still no explicit state machine, persistent state store, repeatable evaluation harness, bounded retry controller, or redeployed tool-enabled container. Recognizing those issues is useful but does not count as completed implementation in those skill areas.
+
+**Important design lesson:** More model turns and more control flags are not automatically an improvement. Authorization logic should remain small and deterministic; iteration/retry semantics should be designed explicitly in the state-machine/orchestration labs.
 
 ---
 
@@ -198,8 +212,8 @@ Demonstrated hands-on:
 | 1 | JSON Alert Receiver | FastAPI + Pydantic + Docker deterministic boundary | **Completed** |
 | 2 | Structured LLM Alert Triage | Direct LLM API call with validated structured result and deterministic review gates | **Completed** |
 | 3 | Read-Only Investigation Tools | Model selects tools; Python executes validated calls | **Completed** |
-| 4 | Policy-Gated Tools | Separate model intent from deterministic authorization | **Next** |
-| 5 | Investigation State Machine | Explicit states, transitions, limits, and terminal outcomes | Planned |
+| 4 | Policy-Gated Tools | Separate model intent from deterministic authorization and human approval | **Completed** |
+| 5 | Investigation State Machine | Explicit states, transitions, limits, and terminal outcomes | **Next** |
 | 6 | Rubrics and Evaluation | Repeatable test cases and failure categories | Planned |
 | 7 | Bounded Self-Correction | Evaluate → feedback → limited retry → escalate | Planned |
 | 8 | RAG | Retrieve security knowledge with source attribution | Planned |
@@ -210,27 +224,29 @@ Demonstrated hands-on:
 
 ---
 
-## Lab 4 Target Architecture
+## Lab 5 Target Architecture
 
 ```text
-validated investigation request
-        ↓
-LLM proposes a tool/action
-        ↓
-structured action request
-        ↓
-Python resolves tool + actor + arguments
-        ↓
-deterministic authorization / policy decision
-        ↓
-ALLOW → execute
-DENY  → terminal blocked result
-REVIEW → require approval/escalation
-        ↓
-result returned to workflow
+validated alert
+      ↓
+INVESTIGATING
+      ↓
+LLM/tool decision
+      ↓
+more evidence? ──→ INVESTIGATING
+      ↓
+action proposed
+      ↓
+AWAITING_APPROVAL
+      ↓
+approve / reject
+      ↓
+EXECUTING / BLOCKED
+      ↓
+COMPLETED
 ```
 
-Lab 4 should keep the model responsible for intent/reasoning while moving authorization completely outside the model. The important next step is to distinguish read-only operations from state-changing operations and introduce explicit policy decisions such as `allow`, `deny`, and `require_approval`.
+Lab 5 should replace scattered control flags with explicit workflow state and legal transitions. It should also define terminal outcomes and bounded transitions so the agent cannot remain in an uncontrolled loop.
 
 ---
 
@@ -241,8 +257,8 @@ Lab 4 should keep the model responsible for intent/reasoning while moving author
 2. LLM API                            DONE
 3. structured LLM outputs             DONE
 4. tool calling                       DONE
-5. deterministic tool-policy gates    NEXT
-6. state machine
+5. deterministic tool-policy gates    DONE
+6. state machine                      NEXT
 7. evaluation/rubric
 8. bounded self-correction
 9. RAG
