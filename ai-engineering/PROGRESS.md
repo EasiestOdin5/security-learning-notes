@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 2, 2026  
+**Last updated:** September 3, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when a dated lab contains demonstrated implementation evidence. Discussion, recognition, architecture ideas, or correct conceptual answers alone do not increase a score.
@@ -43,15 +43,15 @@ The long-term target is a security investigation agent that can collect evidence
 | LLM API Fundamentals | 2.0 | 3.0 | 8.0 | +1.0 | Direct Responses API use, structured parsing, function-call output continuation, environment-key handling, FastAPI integration, API-error handling |
 | Structured Outputs / Schemas | 2.0 | 3.5 | 8.0 | +1.5 | Pydantic API/LLM schemas plus function-tool JSON Schema and independent application-side argument validation |
 | Tool / Function Calling | 2.0 | 3.75 | 8.0 | +1.75 | Read-only and state-changing custom tools, model-selected calls, explicit execution, dynamic dispatch, result return, and approval-gated action requests |
-| Agent Orchestration | 2.5 | 3.0 | 8.0 | +0.5 | Guided model/tool workflow now carries an explicit investigation object across request, pending approval, approval/rejection, and execution outcomes |
-| State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Implemented explicit FSM states, transition table, legal-transition enforcement, terminal states, and integrated workflow transitions |
+| Agent Orchestration | 2.5 | 3.0 | 8.0 | +0.5 | Guided model/tool workflow carries an explicit investigation object across request, approval, rejection, and execution outcomes |
+| State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal-transition table, deterministic enforcement, terminal states, and integrated workflow transitions |
 | Deterministic Gates / Policy Controls | 3.0 | 5.0 | 8.0 | +2.0 | Input/review gates, tool allowlist, argument/policy validation, human approval, and deterministic state-transition enforcement |
-| Evaluation / Rubrics | 2.0 | 2.0 | 8.0 | — | Manual success/failure tests exist, but no repeatable evaluation harness yet |
+| Evaluation / Rubrics | 2.0 | 3.0 | 8.0 | +1.0 | Repeatable eval harness with fixed cases, ground-truth state/tool expectations, machine-readable outcomes, PASS/FAIL summary, and intentional failure validation |
 | Self-Correction / Bounded Retry | 2.0 | 2.0 | 7.5 | — | Retry/loop risks observed but bounded retry not implemented |
 | RAG / Retrieval | 1.5 | 1.5 | 7.5 | — | Not implemented |
 | Agent Memory / Persistent State | 1.5 | 1.5 | 7.5 | — | Investigation/pending state is in-memory only; no persistent state store |
 | Agent Security / Threat Modeling | 3.5 | 4.5 | 8.5 | +1.0 | Prompt-injection, unauthorized-tool, approval-boundary, and deterministic execution-boundary tests demonstrated |
-| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 container deployment remains demonstrated; updated LLM/tool/FSM-enabled version has not yet been redeployed in Docker |
+| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 container deployment remains demonstrated; updated LLM/tool/FSM/eval version has not yet been redeployed in Docker |
 | AI Observability / Tracing / Cost | 1.5 | 1.5 | 7.5 | — | No token/cost/latency tracing yet |
 
 ### Progress Wheel
@@ -76,7 +76,7 @@ The initial scores were deliberately conservative. Existing security, cloud, Kub
 
 **Evidence:** [AI Engineering Lab 1 — FastAPI JSON Alert Receiver](2026-09-01-lab-01-fastapi-json-alert-receiver.md)
 
-Demonstrated FastAPI/Uvicorn application setup, Pydantic alert validation, generated API documentation, Docker build/run behavior, and deterministic input rejection.
+Demonstrated FastAPI/Uvicorn setup, Pydantic alert validation, generated API documentation, Docker build/run behavior, and deterministic input rejection.
 
 **Score changes:**
 
@@ -130,7 +130,7 @@ Demonstrated custom function tools, strict JSON Schema parameters, model-selecte
 
 **Evidence:** [AI Engineering Lab 4 — Policy-Gated Tools](2026-09-02-lab-04-policy-gated-tools.md)
 
-Demonstrated a state-changing `disable_user` tool, policy-aware registry metadata, human approval requirements, UUID-scoped pending actions, exact-action approval/rejection, and one-time deterministic execution. A multi-turn loop experiment was intentionally removed from scope after exposing unnecessary complexity and repeated-call risks.
+Demonstrated a state-changing `disable_user` tool, policy-aware registry metadata, human approval requirements, UUID-scoped pending actions, exact-action approval/rejection, and one-time deterministic execution. A multi-turn loop experiment was intentionally removed after exposing unnecessary complexity and repeated-call risks.
 
 **Score changes:**
 
@@ -146,37 +146,51 @@ Demonstrated a state-changing `disable_user` tool, policy-aware registry metadat
 
 **Evidence:** [AI Engineering Lab 5 — Investigation State Machine](2026-09-02-lab-05-investigation-state-machine.md)
 
-Demonstrated hands-on:
-
-- Defined explicit `NEW`, `INVESTIGATING`, `AWAITING_APPROVAL`, `EXECUTING`, `COMPLETED`, and `BLOCKED` states with `Enum`.
-- Represented legal transitions with a dictionary of sets, understood as an adjacency-list representation of a directed graph.
-- Implemented an `Investigation` object that stores current state.
-- Implemented `transition_to()` to reject illegal transitions deterministically.
-- Verified `NEW → INVESTIGATING` succeeds while `INVESTIGATING → EXECUTING` raises `ValueError`.
-- Verified the full legal path `NEW → INVESTIGATING → AWAITING_APPROVAL → EXECUTING → COMPLETED`.
-- Verified `COMPLETED` is terminal by attempting and rejecting `COMPLETED → INVESTIGATING`.
-- Made `state_machine.py` import-safe with `if __name__ == "__main__"`.
-- Connected the FSM to the existing tool workflow.
-- Stored the same `Investigation` object with the pending UUID action so approval/rejection continues the same workflow instance.
-- Verified approval transitions `AWAITING_APPROVAL → EXECUTING → COMPLETED`.
-- Verified rejection transitions `AWAITING_APPROVAL → BLOCKED`.
-- Added execution exception handling and verified `EXECUTING → BLOCKED` using a simulated tool failure.
-- Verified a no-action investigation can follow `INVESTIGATING → COMPLETED`.
-- Diagnosed a 401 invalid API-key issue on the new laptop environment.
-- Diagnosed a `KeyError: 'investigation'` caused by an older pending-action dictionary and fixed it by storing the FSM object.
-- Identified that the current no-action completion rule is only a temporary simplification: Python currently completes if the workflow remains in `INVESTIGATING`, rather than consuming an explicit structured `investigation_complete` signal.
+Demonstrated an explicit FSM using `Enum`, a dictionary-of-sets transition table, current-state storage, legal/illegal transition enforcement, terminal states, and integration with approval/rejection/execution paths. Tested successful approval, rejected approval, execution failure, and no-action completion. Also diagnosed API-key and missing-investigation-state integration failures.
 
 **Score changes:**
 
 | Skill area | Before | After | Reason |
 |---|---:|---:|---|
-| Agent Orchestration | 2.75 | 3.0 | The same workflow object now persists across request, pending approval, approval/rejection, and execution outcome within the process |
-| State Machines / Workflow Control | 2.5 | 3.5 | Implemented and tested a real FSM with explicit states, legal/illegal transitions, terminal states, and integration into the tool workflow |
-| Deterministic Gates / Policy Controls | 4.75 | 5.0 | Legal workflow transitions are now enforced by deterministic Python rather than implied control flow |
+| Agent Orchestration | 2.75 | 3.0 | Same workflow object persists across request, pending approval, approval/rejection, and execution outcome |
+| State Machines / Workflow Control | 2.5 | 3.5 | Real FSM with explicit states, legal/illegal transitions, terminal states, and workflow integration |
+| Deterministic Gates / Policy Controls | 4.75 | 5.0 | Legal workflow transitions are enforced by deterministic Python |
 
-**Why other scores did not increase:** The FSM implementation was guided. No persistent state, transition/event log, formal rubric, bounded retry controller, or independent state-machine architecture was implemented. Tool behavior and security controls largely reused evidence from earlier labs.
+**Important limitation:** The no-action completion path still uses a simplified rule: remaining in `INVESTIGATING` after the read-only result is treated as completion rather than consuming an explicit structured `investigation_complete` signal.
 
-**Important design lesson:** The LLM/reasoning layer may determine which outcome it wants, but the state machine decides whether that move is legal. State describes workflow phase; it is not the tool action itself.
+---
+
+### September 3, 2026 — Lab 6: Rubrics and Evaluation
+
+**Evidence:** [AI Engineering Lab 6 — Rubrics and Evaluation](2026-09-03-lab-06-rubrics-and-evaluation.md)
+
+Demonstrated hands-on:
+
+- Created a separate `eval_lab.py` evaluation module rather than appending ad hoc test calls to agent code.
+- Used `@dataclass` to represent reusable `EvalCase` records.
+- Defined evaluator-only ground truth for expected final state and expected tool request.
+- Modified `run_request()` to return machine-readable state rather than relying only on console output.
+- Captured tool names requested by the LLM and returned them for evaluation.
+- Built automated state/tool comparisons and PASS/FAIL reporting.
+- Added a suite-level pass counter and summary.
+- Created three cases: benign completion, approval-required state change, and deterministic private-IP policy block.
+- Used the eval suite to discover a Lab 5 inconsistency: policy rejection printed `BLOCKED` but did not transition the FSM to `BLOCKED`.
+- Fixed the workflow so policy rejection now performs `INVESTIGATING → BLOCKED`.
+- Established a clean `3/3` passing baseline.
+- Deliberately changed the expected `disable_user` tool name to an incorrect value and verified the suite dropped to `2/3`, proving the harness actually detects mismatch/regression.
+- Restored the expected value and verified the baseline returned to `3/3`.
+- Connected the evaluation approach to familiar detection-engineering regression testing concepts.
+- Identified that nondeterministic LLM evaluation will eventually require repeated runs and statistical pass rates rather than relying only on one PASS/FAIL execution.
+
+**Score changes:**
+
+| Skill area | Before | After | Reason |
+|---|---:|---:|---|
+| Evaluation / Rubrics | 2.0 | 3.0 | Implemented a real reusable eval harness with fixed ground truth, machine-readable outcomes, automated PASS/FAIL, regression detection, and a suite summary |
+
+**Why other scores did not increase:** The implementation reused the existing workflow and tools. The Lab 5 policy-state correction improves correctness but does not represent enough new state-machine or policy capability for another score increase. The evaluation set is only three guided cases with no repeated-run statistics, semantic scoring, CI, or independent large-corpus design.
+
+**Important design lesson:** A new prompt/model/code change should not be judged only by whether a single run looks better. Run the same fixed evaluation corpus before and after the change and compare results; for nondeterministic systems, stronger evidence eventually requires repeated runs and pass-rate statistics.
 
 ---
 
@@ -189,8 +203,8 @@ Demonstrated hands-on:
 | 3 | Read-Only Investigation Tools | Model selects tools; Python executes validated calls | **Completed** |
 | 4 | Policy-Gated Tools | Separate model intent from deterministic authorization and human approval | **Completed** |
 | 5 | Investigation State Machine | Explicit states, legal transitions, terminal outcomes, and workflow integration | **Completed** |
-| 6 | Rubrics and Evaluation | Repeatable test cases and failure categories | **Next** |
-| 7 | Bounded Self-Correction | Evaluate → feedback → limited retry → escalate | Planned |
+| 6 | Rubrics and Evaluation | Repeatable test cases, expected outcomes, automated PASS/FAIL, and regression baseline | **Completed** |
+| 7 | Bounded Self-Correction | Evaluate → feedback → limited retry → escalate | **Next** |
 | 8 | RAG | Retrieve security knowledge with source attribution | Planned |
 | 9 | Persistent State / Memory | Resume investigations from external state | Planned |
 | 10 | Agent Security | Prompt injection, malicious tool output, exfiltration, permission attacks | Planned |
@@ -199,23 +213,24 @@ Demonstrated hands-on:
 
 ---
 
-## Lab 6 Target Architecture
+## Lab 7 Target Architecture
 
 ```text
-fixed test case
-      ↓
-run agent / decision
-      ↓
-collect structured result
-      ↓
-rubric checks
-      ↓
-PASS / FAIL + failure category
-      ↓
-repeat across cases
+run model/agent attempt
+        ↓
+evaluate result against explicit criteria
+        ↓
+PASS ─────────────→ continue/finish
+        ↓ FAIL
+construct bounded feedback
+        ↓
+retry only if attempts remain
+        ↓
+PASS → continue
+FAIL at limit → stop / escalate
 ```
 
-Lab 6 should stop relying on one-off manual observations and create repeatable tests for expected classifications, actions, policy behavior, evidence grounding, and failure categories.
+Lab 7 should demonstrate that the LLM cannot retry indefinitely. Evaluation may recommend another attempt, but deterministic Python owns the retry counter and hard maximum.
 
 ---
 
@@ -228,8 +243,8 @@ Lab 6 should stop relying on one-off manual observations and create repeatable t
 4. tool calling                       DONE
 5. deterministic tool-policy gates    DONE
 6. state machine                      DONE
-7. evaluation/rubric                  NEXT
-8. bounded self-correction
+7. evaluation/rubric                  DONE
+8. bounded self-correction            NEXT
 9. RAG
 10. memory/state persistence
 11. deeper agent security
