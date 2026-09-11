@@ -1,38 +1,36 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 4, 2026  
+**Last updated:** September 11, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
-**Scoring policy:** Scores change only when a dated lab contains demonstrated implementation evidence. Discussion, recognition, architecture ideas, or correct conceptual answers alone do not increase a score.
+**Scoring policy:** Scores change only when dated labs contain demonstrated implementation evidence. Discussion or recognition alone does not raise a score.
 
 ---
 
 ## Target Outcome
 
-Build reliable AI systems around existing foundation models rather than focus primarily on model training.
+Build reliable AI systems around existing foundation models rather than focus on model training.
 
 ```text
-External event / alert
+External event / question
         ↓
 Deterministic API + schema validation
         ↓
-Agent state
+Agent state / retrieval context
         ↓
-LLM decision
+LLM decision or grounded answer
         ↓
-Structured tool request
+Structured tool request / recommendation
         ↓
 Deterministic authorization / policy gate
         ↓
 Tool execution
         ↓
-Observation returned to agent
-        ↓
 Evaluate / bounded retry / escalate / finish
 ```
 
-The long-term target is a security investigation agent that can collect evidence, select approved tools, reason over results, verify outputs against explicit criteria, use bounded correction when appropriate, and request human approval before high-risk actions.
+The long-term target is a security-focused AI application that can retrieve trusted knowledge, collect evidence, choose approved tools, reason over results, verify outputs against explicit criteria, use bounded correction when appropriate, and require deterministic policy/approval before high-risk actions.
 
 ---
 
@@ -40,25 +38,25 @@ The long-term target is a security investigation agent that can collect evidence
 
 | Skill area | Initial | Current | Goal | Change | Evidence status |
 |---|---:|---:|---:|---:|---|
-| LLM API Fundamentals | 2.0 | 3.0 | 8.0 | +1.0 | Direct Responses API use, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling |
-| Structured Outputs / Schemas | 2.0 | 3.5 | 8.0 | +1.5 | Pydantic API/LLM schemas plus function-tool JSON Schema and independent application-side argument validation |
-| Tool / Function Calling | 2.0 | 3.75 | 8.0 | +1.75 | Read-only and state-changing custom tools, model-selected calls, explicit execution, dynamic dispatch, result return, and approval-gated action requests |
-| Agent Orchestration | 2.5 | 3.0 | 8.0 | +0.5 | Guided model/tool workflow carries an explicit investigation object across request, approval, rejection, and execution outcomes; multi-step tool-loop limitation remains |
-| State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal-transition table, deterministic enforcement, terminal states, and integrated workflow transitions |
-| Deterministic Gates / Policy Controls | 3.0 | 5.0 | 8.0 | +2.0 | Input/review gates, tool allowlist, argument/policy validation, human approval, and deterministic state-transition enforcement |
-| Evaluation / Rubrics | 2.0 | 3.0 | 8.0 | +1.0 | Repeatable eval harness with fixed cases, ground-truth state/tool expectations, machine-readable outcomes, PASS/FAIL summary, and intentional failure validation |
-| Self-Correction / Bounded Retry | 2.0 | 3.0 | 7.5 | +1.0 | Fixed retry budget, evaluator feedback, real LLM correction on attempt 2, real hard-stop test, and observable attempt traces |
-| RAG / Retrieval | 1.5 | 1.5 | 7.5 | — | Not implemented |
-| Agent Memory / Persistent State | 1.5 | 1.5 | 7.5 | — | Investigation/pending state is in-memory only; no persistent state store |
-| Agent Security / Threat Modeling | 3.5 | 4.5 | 8.5 | +1.0 | Prompt-injection, unauthorized-tool, approval-boundary, deterministic execution-boundary, and evaluator-ground-truth risk discussed/tested |
-| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 container deployment remains demonstrated; updated LLM/tool/FSM/eval/retry version has not yet been redeployed in Docker |
-| AI Observability / Tracing / Cost | 1.5 | 1.5 | 7.5 | — | Attempt logging exists for Lab 7 debugging, but no structured token/cost/latency tracing yet |
+| LLM API Fundamentals | 2.0 | 3.0 | 8.0 | +1.0 | Responses API, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling |
+| Structured Outputs / Schemas | 2.0 | 3.5 | 8.0 | +1.5 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation |
+| Tool / Function Calling | 2.0 | 3.75 | 8.0 | +1.75 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, result return, approval-gated actions |
+| Agent Orchestration | 2.5 | 3.0 | 8.0 | +0.5 | Guided model/tool workflow with shared investigation state; multi-step tool-loop limitation remains |
+| State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal transitions, deterministic enforcement, terminal outcomes |
+| Deterministic Gates / Policy Controls | 3.0 | 5.0 | 8.0 | +2.0 | Input/review gates, tool allowlist, argument/policy validation, approval, deterministic state transitions |
+| Evaluation / Rubrics | 2.0 | 3.0 | 8.0 | +1.0 | Repeatable eval harness, ground-truth state/tool expectations, PASS/FAIL summary, intentional regression test |
+| Self-Correction / Bounded Retry | 2.0 | 3.0 | 7.5 | +1.0 | Fixed retry budget, evaluator feedback, real LLM correction, deterministic hard-stop behavior |
+| RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
+| Agent Memory / Persistent State | 1.5 | 1.5 | 7.5 | — | In-memory investigation/pending state only; no persistent state store |
+| Agent Security / Threat Modeling | 3.5 | 4.5 | 8.5 | +1.0 | Prompt injection, unauthorized tools, approval boundary, evaluator-ground-truth risk, RAG trust/retrieval risks understood |
+| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 Docker deployment; newer LLM/tool/FSM/eval/retry/RAG code not yet redeployed in container/cloud |
+| AI Observability / Tracing / Cost | 1.5 | 1.5 | 7.5 | — | Debug/attempt logs exist; no structured token/cost/latency tracing yet |
 
 ### Progress Wheel
 
 ![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg)
 
-The solid filled polygon is **current demonstrated progress**. The dashed outline is the target level. Topic labels and current scores are placed around the outer wheel.
+The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
 ---
 
@@ -66,39 +64,35 @@ The solid filled polygon is **current demonstrated progress**. The dashed outlin
 
 ### September 1, 2026 — Baseline
 
-Initial scores were deliberately conservative. Existing security, cloud, Kubernetes, API, identity, permissions, and trust-boundary experience provides useful transfer, but conceptual discussion of agents does not count as hands-on AI implementation.
-
-**Score changes:** None.
+Initial scores were deliberately conservative. Existing security, cloud, Kubernetes, API, identity, permission, and trust-boundary experience transfers well, but conceptual discussion alone does not count as hands-on AI implementation.
 
 ---
 
 ### September 1, 2026 — Lab 1: FastAPI JSON Alert Receiver
 
-**Evidence:** [AI Engineering Lab 1 — FastAPI JSON Alert Receiver](2026-09-01-lab-01-fastapi-json-alert-receiver.md)
+**Evidence:** [Lab 1](2026-09-01-lab-01-fastapi-json-alert-receiver.md)
 
-Demonstrated FastAPI/Uvicorn setup, Pydantic alert validation, generated API documentation, Docker build/run behavior, and deterministic input rejection.
+FastAPI/Uvicorn setup, Pydantic alert validation, API docs, Docker build/run, deterministic rejection.
 
-**Score changes:** Structured Outputs / Schemas 2.0→2.25; Deterministic Gates 3.0→3.25; Deployment 3.0→3.5.
+**Score changes:** Structured Outputs 2.0→2.25; Deterministic Gates 3.0→3.25; Deployment 3.0→3.5.
 
 ---
 
 ### September 1, 2026 — Lab 2: Structured LLM Alert Triage
 
-**Evidence:** [AI Engineering Lab 2 — Structured LLM Alert Triage](2026-09-01-lab-02-structured-llm-alert-triage.md)
+**Evidence:** [Lab 2](2026-09-01-lab-02-structured-llm-alert-triage.md)
 
-Demonstrated direct Responses API use, Pydantic structured LLM output, system/user roles, confidence constraints, FastAPI integration, API-error handling, prompt-injection testing, and deterministic review gates.
+Direct Responses API use, Pydantic structured output, system/user roles, confidence constraints, API-error handling, prompt-injection testing, deterministic review gates.
 
 **Score changes:** LLM API 2.0→2.75; Structured Outputs 2.25→3.25; Deterministic Gates 3.25→3.75; Agent Security 3.5→4.0.
-
-**Important limitation:** Structured output constrains shape but does not guarantee semantic correctness.
 
 ---
 
 ### September 1, 2026 — Lab 3: Read-Only Investigation Tools
 
-**Evidence:** [AI Engineering Lab 3 — Read-Only Investigation Tools](2026-09-01-lab-03-read-only-investigation-tools.md)
+**Evidence:** [Lab 3](2026-09-01-lab-03-read-only-investigation-tools.md)
 
-Demonstrated custom function tools, strict JSON Schema parameters, model-selected tool calls, explicit Python execution, `function_call_output`, `call_id`, `previous_response_id`, multiple-tool dispatch, executable allowlisting, Pydantic argument validation, IP policy validation, and an insufficient-evidence test.
+Custom tools, strict schemas, model-selected calls, Python execution, function-call result continuation, dynamic dispatch, allowlisting, Pydantic validation, IP policy validation, insufficient-evidence testing.
 
 **Score changes:** LLM API 2.75→3.0; Structured Outputs 3.25→3.5; Tool Calling 2.0→3.5; Orchestration 2.5→2.75; Deterministic Gates 3.75→4.25; Agent Security 4.0→4.25.
 
@@ -106,9 +100,9 @@ Demonstrated custom function tools, strict JSON Schema parameters, model-selecte
 
 ### September 2, 2026 — Lab 4: Policy-Gated Tools
 
-**Evidence:** [AI Engineering Lab 4 — Policy-Gated Tools](2026-09-02-lab-04-policy-gated-tools.md)
+**Evidence:** [Lab 4](2026-09-02-lab-04-policy-gated-tools.md)
 
-Demonstrated a state-changing `disable_user` tool, policy-aware registry metadata, human approval requirements, UUID-scoped pending actions, exact-action approval/rejection, and one-time deterministic execution. A multi-turn loop experiment was intentionally removed after exposing unnecessary complexity and repeated-call risks.
+State-changing `disable_user`, approval metadata, UUID-scoped pending actions, exact-action approval/rejection, deterministic execution. A general multi-turn loop was intentionally removed after exposing repeated-call complexity.
 
 **Score changes:** Tool Calling 3.5→3.75; Deterministic Gates 4.25→4.75; Agent Security 4.25→4.5.
 
@@ -116,60 +110,64 @@ Demonstrated a state-changing `disable_user` tool, policy-aware registry metadat
 
 ### September 2, 2026 — Lab 5: Investigation State Machine
 
-**Evidence:** [AI Engineering Lab 5 — Investigation State Machine](2026-09-02-lab-05-investigation-state-machine.md)
+**Evidence:** [Lab 5](2026-09-02-lab-05-investigation-state-machine.md)
 
-Demonstrated an explicit FSM using `Enum`, a dictionary-of-sets transition table, current-state storage, legal/illegal transition enforcement, terminal states, and integration with approval/rejection/execution paths. Tested successful approval, rejected approval, execution failure, and no-action completion.
+Explicit FSM with `Enum`, transition table, legal/illegal enforcement, terminal states, and approval/rejection/execution integration.
 
 **Score changes:** Orchestration 2.75→3.0; State Machines 2.5→3.5; Deterministic Gates 4.75→5.0.
 
-**Important limitation:** The no-action completion path still treats remaining in `INVESTIGATING` after the read-only result as completion rather than consuming an explicit structured `investigation_complete` signal.
+**Limitation:** no-action completion is still simplified rather than driven by an explicit structured `investigation_complete` signal.
 
 ---
 
 ### September 3, 2026 — Lab 6: Rubrics and Evaluation
 
-**Evidence:** [AI Engineering Lab 6 — Rubrics and Evaluation](2026-09-03-lab-06-rubrics-and-evaluation.md)
+**Evidence:** [Lab 6](2026-09-03-lab-06-rubrics-and-evaluation.md)
 
-Created `eval_lab.py`, reusable `EvalCase` records, evaluator-only expected state/tool ground truth, machine-readable `run_request()` results, automated PASS/FAIL checks, and a suite summary. A three-case baseline reached `3/3`. Deliberately corrupting the expected tool name reduced the suite to `2/3`, proving the harness detects mismatches. The eval also found a real Lab 5 defect where a policy rejection printed `BLOCKED` without actually transitioning the FSM; that was corrected.
+Created `eval_lab.py`, reusable cases, machine-readable state/tool results, automated PASS/FAIL checks, suite summary, a `3/3` baseline, and an intentional `2/3` regression. The eval also exposed a real FSM policy-block bug that was fixed.
 
 **Score changes:** Evaluation / Rubrics 2.0→3.0.
-
-**Important design lesson:** Evaluation ground truth is test data, not an LLM hint. For nondeterministic systems, stronger future evaluation should use repeated runs and pass-rate statistics.
 
 ---
 
 ### September 4, 2026 — Lab 7: Bounded Self-Correction
 
-**Evidence:** [AI Engineering Lab 7 — Bounded Self-Correction](2026-09-04-lab-07-bounded-self-correction.md)
+**Evidence:** [Lab 7](2026-09-04-lab-07-bounded-self-correction.md)
 
-Demonstrated hands-on:
+Built deterministic `MAX_ATTEMPTS`, evaluator feedback, retry input logging, real LLM correction from verbose output to exact `SAFE`, and a real hard-stop test. Also identified that the current tool workflow does not yet support arbitrary multi-step tool loops after read-only enrichment.
 
-- Built a retry controller with deterministic `MAX_ATTEMPTS = 2`.
-- Proved a basic fake failure→retry→success path.
-- Recognized that a counter-driven fake success is retry behavior, not self-correction.
-- Changed evaluator output to `(passed, feedback)` and passed the feedback into the next attempt.
-- Tightened the fake runner so only specific expected feedback changes behavior.
-- Verified a bad/unrecognized feedback path fails twice and stops at the hard limit.
-- Wrapped the existing investigation agent and tested state/tool expectations.
-- Corrected an invalid evaluator assumption: `Investigate whether user alice should be disabled` reasonably produced `get_user_activity` and `COMPLETED`; forcing `disable_user` was not valid ground truth.
-- Verified an explicit evidence+policy prompt correctly requested `disable_user` and entered `AWAITING_APPROVAL`.
-- Identified an existing orchestration limitation: after a read-only tool result, the current single-pass agent does not continue into another full tool-call cycle such as `get_user_activity → disable_user`.
-- Intentionally did not add a general while-loop because multi-step tool orchestration had already caused repeated-call complexity in Lab 4.
-- Isolated self-correction with a plain LLM response so tool orchestration would not obscure the mechanism.
-- Used a deterministic evaluator requiring exactly `SAFE`.
-- Ran a real prompt that produced a verbose first answer, returned explicit evaluator feedback, and observed the real LLM correct attempt 2 to exactly `SAFE`.
-- Added logging showing exact attempt input, model output, evaluator decision, and feedback.
-- Made the evaluator intentionally impossible to satisfy and verified the real LLM failed both attempts and the controller stopped at `MAX_ATTEMPTS`.
+**Score changes:** Self-Correction / Bounded Retry 2.0→3.0.
+
+---
+
+### September 11, 2026 — Lab 8: RAG / Retrieval
+
+**Evidence:** [Lab 8](2026-09-11-lab-08-rag-retrieval.md)
+
+Built a standalone RAG pipeline progressively:
+
+- local security policy / IR knowledge base;
+- deterministic keyword retrieval;
+- bag-of-words vectors and manual cosine similarity;
+- demonstrated lexical retrieval failure on `account takeover` vs `compromised account`;
+- OpenAI embedding API for semantic vectors;
+- observed ambiguous semantic retrieval where `doc1≈0.44` and `doc3≈0.45`;
+- changed top-1 retrieval to top-2;
+- added source IDs and source-attributed answers;
+- added a minimum similarity threshold and verified irrelevant malware-policy query returns no document;
+- precomputed document embeddings so only query embeddings are generated at query time;
+- verified a grounded answer refuses to invent an unspecified password-reset wait time;
+- connected the design to SOAR: RAG retrieves/contextualizes policy while deterministic controls/SOAR execute approved actions.
 
 **Score changes:**
 
 | Skill area | Before | After | Reason |
 |---|---:|---:|---|
-| Self-Correction / Bounded Retry | 2.0 | 3.0 | Implemented and tested a real bounded feedback→retry mechanism, including successful real-LLM correction and deterministic hard-stop behavior |
+| RAG / Retrieval | 1.5 | 3.0 | Implemented end-to-end semantic retrieval and grounded generation with embeddings, similarity ranking, top-k, thresholding, source attribution, reusable document vectors, and negative/unsupported-detail tests |
 
-**Why other scores did not increase:** Lab 7 reused the Lab 6 evaluator concept rather than materially expanding evaluation. Agent orchestration was not improved; a limitation was found and deliberately left for a later advanced pass. Debug prints do not yet constitute production observability.
+**Why other scores did not increase:** The lab reused existing LLM API and security concepts. Retrieval was guided and limited to three short documents. No chunking, vector DB, metadata filtering, reranking, hybrid search, automated retrieval metrics, large corpus, or production indexing was implemented.
 
-**Important design lesson:** self-correction is not “let the model keep trying.” Deterministic code owns the retry budget; the evaluator identifies what failed; the model may use that feedback on the next allowed attempt. Incorrect evaluator ground truth can also push a model toward an unjustified action, so the rubric itself is part of the safety boundary.
+**Important design lesson:** semantic similarity is useful but not equivalent to correctness. A related document can outrank the intended one, so production RAG needs retrieval evaluation, calibrated thresholds, potentially reranking, source authorization, and grounding checks.
 
 ---
 
@@ -178,37 +176,37 @@ Demonstrated hands-on:
 | Lab | Topic | Core outcome | Status |
 |---:|---|---|---|
 | 1 | JSON Alert Receiver | FastAPI + Pydantic + Docker deterministic boundary | **Completed** |
-| 2 | Structured LLM Alert Triage | Direct LLM API call with validated structured result and deterministic review gates | **Completed** |
+| 2 | Structured LLM Alert Triage | Validated structured LLM result and deterministic review gates | **Completed** |
 | 3 | Read-Only Investigation Tools | Model selects tools; Python executes validated calls | **Completed** |
-| 4 | Policy-Gated Tools | Separate model intent from deterministic authorization and human approval | **Completed** |
-| 5 | Investigation State Machine | Explicit states, legal transitions, terminal outcomes, and workflow integration | **Completed** |
-| 6 | Rubrics and Evaluation | Repeatable test cases, expected outcomes, automated PASS/FAIL, and regression baseline | **Completed** |
+| 4 | Policy-Gated Tools | Separate model intent from deterministic authorization/human approval | **Completed** |
+| 5 | Investigation State Machine | Explicit states, legal transitions, terminal outcomes | **Completed** |
+| 6 | Rubrics and Evaluation | Repeatable cases, expected outcomes, regression baseline | **Completed** |
 | 7 | Bounded Self-Correction | Evaluate → feedback → limited retry → hard stop | **Completed** |
-| 8 | RAG | Retrieve security knowledge with source attribution | **Next** |
-| 9 | Persistent State / Memory | Resume investigations from external state | Planned |
+| 8 | RAG / Retrieval | Semantic retrieval, top-k, threshold, grounded answer, source attribution | **Completed** |
+| 9 | Persistent State / Memory | Resume investigations from external state | **Next** |
 | 10 | Agent Security | Prompt injection, malicious tool output, exfiltration, permission attacks | Planned |
-| 11 | Observability | Trace model calls, tools, states, policy decisions, latency, tokens, and cost | Planned |
-| 12 | Cloud / Kubernetes Deployment | Apply workload identity, least privilege, secrets, network and pod controls | Planned |
+| 11 | Observability | Trace model calls, tools, states, policy decisions, latency, tokens, cost | Planned |
+| 12 | Cloud / Kubernetes Deployment | Workload identity, least privilege, secrets, network/pod controls | Planned |
 
 ---
 
-## Lab 8 Target Architecture
+## Lab 9 Target Architecture
 
 ```text
-user / investigation question
+request / investigation
         ↓
-retrieve relevant trusted documents
+load durable investigation state
         ↓
-select useful passages
+perform one bounded workflow step
         ↓
-provide retrieved context to LLM
+persist state / pending action / evidence
         ↓
-LLM answers from supplied evidence
+process can stop or restart
         ↓
-include source attribution
+resume same investigation later
 ```
 
-Lab 8 should introduce retrieval without hiding the mechanics behind a large agent framework. The first goal is to understand document chunks, retrieval relevance, context injection, and grounding before adding more elaborate vector infrastructure.
+Lab 9 should move important state out of Python process memory so an investigation can survive restart and continue safely.
 
 ---
 
@@ -223,14 +221,14 @@ Lab 8 should introduce retrieval without hiding the mechanics behind a large age
 6. state machine                      DONE
 7. evaluation/rubric                  DONE
 8. bounded self-correction            DONE
-9. RAG                                NEXT
-10. memory/state persistence
+9. RAG                                DONE
+10. persistent state / memory         NEXT
 11. deeper agent security
 12. observability
 13. AWS/Kubernetes deployment
 ```
 
-Do not rely heavily on agent frameworks at the beginning. Implement the first versions directly enough to understand model calls, schema validation, state, tool execution, retry behavior, retrieval, and security boundaries before adding orchestration frameworks.
+Do not rely heavily on agent frameworks at the beginning. Implement the first versions directly enough to understand model calls, validation, state, tool execution, retry behavior, retrieval, persistence, and security boundaries before adding orchestration frameworks.
 
 ---
 
@@ -246,6 +244,6 @@ After each lab, create a dated Markdown note under `ai-engineering/` containing:
 6. Questions and answers.
 7. Security implications.
 8. What was independently understood versus completed with guidance.
-9. Score changes, only when justified.
+9. Score changes only when justified.
 
 A correct conceptual answer alone does not raise a score.
