@@ -43,18 +43,18 @@ The long-term target is a security-focused AI application that can retrieve trus
 | Tool / Function Calling | 2.0 | 3.75 | 8.0 | +1.75 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, result return, approval-gated actions |
 | Agent Orchestration | 2.5 | 3.0 | 8.0 | +0.5 | Guided model/tool workflow with shared investigation state; general multi-action/tool-loop limitation remains |
 | State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal transitions, deterministic enforcement, terminal outcomes |
-| Deterministic Gates / Policy Controls | 3.0 | 5.0 | 8.0 | +2.0 | Input/review gates, tool allowlist, argument/policy validation, approval, deterministic state transitions |
+| Deterministic Gates / Policy Controls | 3.0 | 5.25 | 8.0 | +2.25 | Input/review gates, tool allowlist, argument/policy validation, approval, deterministic state transitions, pre-model secret redaction |
 | Evaluation / Rubrics | 2.0 | 3.0 | 8.0 | +1.0 | Repeatable eval harness, ground-truth state/tool expectations, PASS/FAIL summary, intentional regression test |
 | Self-Correction / Bounded Retry | 2.0 | 3.0 | 7.5 | +1.0 | Fixed retry budget, evaluator feedback, real LLM correction, deterministic hard-stop behavior |
 | RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
 | Agent Memory / Persistent State | 1.5 | 3.0 | 7.5 | +1.5 | SQLite-backed investigation state and pending actions, restart recovery, FSM reconstruction, persistent approve/reject and success/failure outcomes |
-| Agent Security / Threat Modeling | 3.5 | 4.5 | 8.5 | +1.0 | Prompt injection, unauthorized tools, approval boundary, evaluator-ground-truth risk, RAG trust/retrieval risks understood |
-| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 Docker deployment; newer LLM/tool/FSM/eval/retry/RAG/persistence code not yet redeployed in container/cloud |
+| Agent Security / Threat Modeling | 3.5 | 5.25 | 8.5 | +1.75 | Indirect prompt injection, poisoned tool output, authorization/approval boundaries, capability allowlisting, exfiltration controls, model-vs-system compromise analysis |
+| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 Docker deployment; newer LLM/tool/FSM/eval/retry/RAG/persistence/security code not yet redeployed in container/cloud |
 | AI Observability / Tracing / Cost | 1.5 | 1.5 | 7.5 | — | Debug/attempt logs exist; no structured token/cost/latency tracing yet |
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260912-lab9)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260912-lab10)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
@@ -156,32 +156,35 @@ Built semantic retrieval progressively from keyword matching to bag-of-words cos
 
 **Evidence:** [Lab 9](2026-09-12-lab-09-persistent-state-memory.md)
 
-Built a standalone persistence layer around SQLite and connected it back to the existing FSM/approval design:
+Built a standalone persistence layer around SQLite and connected it back to the existing FSM/approval design. Persisted investigations and pending actions, reconstructed FSM state after restart, retained deterministic transition enforcement, persisted approval/rejection and execution success/failure paths, and identified the limitation that one completed action does not necessarily mean the overall investigation is complete.
 
-- created durable `investigations` and `pending_actions` tables;
-- saved and reloaded investigation state across script runs;
-- reconstructed `Investigation` objects from persisted enum values;
-- persisted legal FSM transitions only after deterministic validation;
-- verified illegal transitions do not overwrite durable state;
-- serialized pending tool arguments as JSON;
-- persisted tool names as data rather than executable Python objects;
-- reconstructed executable behavior through a trusted dictionary registry;
-- made approval an explicit trigger for tool execution rather than an implicit assumption;
-- implemented persistent `AWAITING_APPROVAL → EXECUTING → COMPLETED` on success;
-- implemented `AWAITING_APPROVAL → EXECUTING → BLOCKED` on simulated execution failure;
-- implemented persistent rejection as `AWAITING_APPROVAL → BLOCKED` without executing the tool;
-- consumed pending actions after success, failure, or rejection to avoid treating attempted work as still pending;
-- identified that one successful action does not inherently mean an entire multi-action investigation is complete.
+**Score changes:** Agent Memory / Persistent State 1.5→3.0.
+
+---
+
+### September 12, 2026 — Lab 10: Agent Security
+
+**Evidence:** [Lab 10](2026-09-12-lab-10-agent-security.md)
+
+Stress-tested the agent trust boundaries with four first-pass scenarios:
+
+- indirect prompt injection through retrieved content: a stronger injected document caused the model to return `DISABLE_USER`;
+- poisoned tool output: obvious injection strings failed, but a plausible `recommended_action=DISABLE_USER` field overrode benign evidence;
+- deterministic capability enforcement: unauthorized tool → block, authorized high-risk tool → require approval, authorized low-risk tool → allow;
+- sensitive-data exfiltration: the model voluntarily redacted a fake API key, then deterministic pre-model redaction was added so the secret never reached the model.
+
+The lab also distinguished **model compromise** from **system compromise**: the model can be manipulated while deterministic application controls still prevent execution.
+
+The user explicitly recognized that the code itself is mostly simple `if/else`; the security value is deciding which decisions cannot safely be delegated to a nondeterministic model. The discussion also connected agent testing to black-box AppSec: when implementation is unknown, craft adversarial inputs, observe behavior, infer trust boundaries, and attempt bypasses.
 
 **Score changes:**
 
 | Skill area | Before | After | Reason |
 |---|---:|---:|---|
-| Agent Memory / Persistent State | 1.5 | 3.0 | Implemented durable investigation/pending-action state, restart recovery, FSM reconstruction, trusted action reconstruction, and persistent approval/rejection/success/failure paths |
+| Agent Security / Threat Modeling | 4.5 | 5.25 | Hands-on testing of indirect injection, poisoned tool output, unauthorized capability attempts, exfiltration risk, and model-vs-system compromise boundaries |
+| Deterministic Gates / Policy Controls | 5.0 | 5.25 | Exercised ordered allowlist/approval/allow decisions and added deterministic pre-model secret redaction |
 
-**Why other scores did not increase:** The lab persisted behavior already demonstrated in the FSM, tool, and approval labs. It did not yet implement a separate action lifecycle, multiple actions per investigation, audit history, atomic multi-record transactions, idempotency, distributed locking, multi-worker recovery, or a production database.
-
-**Important design lesson:** durable state must preserve the same deterministic trust boundaries as in-memory state. Persist data, reconstruct trusted behavior from application code, and do not let persistence bypass FSM or approval rules.
+**Why the increases are limited:** The attack cases and defenses were small, scripted, and heavily guided. No automated adversarial corpus, repeat-run attack metrics, provenance enforcement, robust DLP, sandboxing, capability tokens, production policy engine, or unknown deployed black-box target was implemented.
 
 ---
 
@@ -198,29 +201,33 @@ Built a standalone persistence layer around SQLite and connected it back to the 
 | 7 | Bounded Self-Correction | Evaluate → feedback → limited retry → hard stop | **Completed** |
 | 8 | RAG / Retrieval | Semantic retrieval, top-k, threshold, grounded answer, source attribution | **Completed** |
 | 9 | Persistent State / Memory | Durable investigation and pending-action state across restart | **Completed** |
-| 10 | Agent Security | Prompt injection, malicious tool output, exfiltration, permission attacks | **Next** |
-| 11 | Observability | Trace model calls, tools, states, policy decisions, latency, tokens, cost | Planned |
+| 10 | Agent Security | Prompt injection, poisoned tool output, exfiltration, permission boundaries | **Completed** |
+| 11 | Observability | Trace model calls, tools, states, policy decisions, latency, tokens, cost | **Next** |
 | 12 | Cloud / Kubernetes Deployment | Workload identity, least privilege, secrets, network/pod controls | Planned |
 
 ---
 
-## Lab 10 Target Architecture
+## Lab 11 Target Architecture
 
 ```text
-untrusted user / document / tool output
+request
         ↓
-LLM / agent reasoning boundary
+trace / request ID
         ↓
-validate provenance + permissions + data flow
+model call ── record model, latency, tokens, errors
         ↓
-deterministic policy and tool authorization
+tool request ── record tool + validated args
         ↓
-allow / sanitize / block / require approval
+policy decision ── record allow / block / approval reason
         ↓
-record security-relevant outcome
+tool execution ── record success / failure / latency
+        ↓
+state transition ── record from / to
+        ↓
+final result + approximate cost
 ```
 
-Lab 10 should stress the agent security boundaries already built rather than merely discuss threats. The focus should be prompt injection, malicious retrieved/tool content, unauthorized action attempts, sensitive-data exfiltration paths, and permission separation.
+Lab 11 should make the existing agent behavior observable enough to answer what happened, why it happened, how long it took, which model/tools were involved, and what it cost.
 
 ---
 
@@ -237,12 +244,12 @@ Lab 10 should stress the agent security boundaries already built rather than mer
 8. bounded self-correction            DONE
 9. RAG                                DONE
 10. persistent state / memory         DONE
-11. deeper agent security             NEXT
-12. observability
+11. deeper agent security             DONE
+12. observability                     NEXT
 13. AWS/Kubernetes deployment
 ```
 
-Do not rely heavily on agent frameworks at the beginning. Implement the first versions directly enough to understand model calls, validation, state, tool execution, retry behavior, retrieval, persistence, and security boundaries before adding orchestration frameworks.
+Do not rely heavily on agent frameworks at the beginning. Implement the first versions directly enough to understand model calls, validation, state, tool execution, retry behavior, retrieval, persistence, security boundaries, and observability before adding orchestration frameworks.
 
 ---
 
