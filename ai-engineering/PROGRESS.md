@@ -54,7 +54,7 @@ The long-term target is a security-focused AI application that can retrieve trus
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260912-lab9)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
