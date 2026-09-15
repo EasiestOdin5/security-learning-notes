@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 12, 2026  
+**Last updated:** September 14, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated labs contain demonstrated implementation evidence. Discussion or recognition alone does not raise a score.
@@ -28,9 +28,11 @@ Deterministic authorization / policy gate
 Tool execution
         ↓
 Persist outcome / evaluate / bounded retry / escalate / finish
+        ↓
+Trace / measure / alert
 ```
 
-The long-term target is a security-focused AI application that can retrieve trusted knowledge, preserve workflow state across restart, collect evidence, choose approved tools, reason over results, verify outputs against explicit criteria, use bounded correction when appropriate, and require deterministic policy/approval before high-risk actions.
+The long-term target is a security-focused AI application that can retrieve trusted knowledge, preserve workflow state across restart, collect evidence, choose approved tools, reason over results, verify outputs against explicit criteria, use bounded correction when appropriate, require deterministic policy/approval before high-risk actions, and make model/tool/workflow behavior observable.
 
 ---
 
@@ -49,12 +51,12 @@ The long-term target is a security-focused AI application that can retrieve trus
 | RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
 | Agent Memory / Persistent State | 1.5 | 3.0 | 7.5 | +1.5 | SQLite-backed investigation state and pending actions, restart recovery, FSM reconstruction, persistent approve/reject and success/failure outcomes |
 | Agent Security / Threat Modeling | 3.5 | 5.25 | 8.5 | +1.75 | Indirect prompt injection, poisoned tool output, authorization/approval boundaries, capability allowlisting, exfiltration controls, model-vs-system compromise analysis |
-| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 Docker deployment; newer LLM/tool/FSM/eval/retry/RAG/persistence/security code not yet redeployed in container/cloud |
-| AI Observability / Tracing / Cost | 1.5 | 1.5 | 7.5 | — | Debug/attempt logs exist; no structured token/cost/latency tracing yet |
+| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 Docker deployment; newer LLM/tool/FSM/eval/retry/RAG/persistence/security/observability code not yet redeployed in container/cloud |
+| AI Observability / Tracing / Cost | 1.5 | 3.0 | 7.5 | +1.5 | Request correlation, model latency/tokens/cost, tool/policy/state events, JSONL traces, request summaries, aggregate metrics/rates, threshold alerts |
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260912-lab10)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260914-lab11)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
@@ -166,25 +168,45 @@ Built a standalone persistence layer around SQLite and connected it back to the 
 
 **Evidence:** [Lab 10](2026-09-12-lab-10-agent-security.md)
 
-Stress-tested the agent trust boundaries with four first-pass scenarios:
+Stress-tested agent trust boundaries with indirect prompt injection, poisoned tool output, unauthorized capability attempts, approval gating, and pre-model secret redaction. Distinguished model compromise from system compromise and connected agent testing to black-box AppSec reasoning.
 
-- indirect prompt injection through retrieved content: a stronger injected document caused the model to return `DISABLE_USER`;
-- poisoned tool output: obvious injection strings failed, but a plausible `recommended_action=DISABLE_USER` field overrode benign evidence;
-- deterministic capability enforcement: unauthorized tool → block, authorized high-risk tool → require approval, authorized low-risk tool → allow;
-- sensitive-data exfiltration: the model voluntarily redacted a fake API key, then deterministic pre-model redaction was added so the secret never reached the model.
+**Score changes:** Agent Security / Threat Modeling 4.5→5.25; Deterministic Gates / Policy Controls 5.0→5.25.
 
-The lab also distinguished **model compromise** from **system compromise**: the model can be manipulated while deterministic application controls still prevent execution.
+---
 
-The user explicitly recognized that the code itself is mostly simple `if/else`; the security value is deciding which decisions cannot safely be delegated to a nondeterministic model. The discussion also connected agent testing to black-box AppSec: when implementation is unknown, craft adversarial inputs, observe behavior, infer trust boundaries, and attempt bypasses.
+### September 14, 2026 — Lab 11: AI Observability / Tracing / Cost
+
+**Evidence:** [Lab 11](2026-09-14-lab-11-observability.md)
+
+Built a local correlated telemetry pipeline around an LLM/agent workflow:
+
+- measured model-call latency with `time.perf_counter()`;
+- captured model name, input/output/total tokens, output, and approximate API cost;
+- generated a UUID `request_id` and used it across model, tool, policy, execution, and state events;
+- logged model tool intent separately from deterministic policy decisions and actual execution;
+- dynamically recorded `allow`, `block`, and `require_approval` policy outcomes;
+- simulated success and failure tool paths and logged `success` vs `error` execution status;
+- connected execution/policy outcome to simplified workflow state (`completed`, `blocked`, `awaiting_approval`);
+- serialized events to JSON and appended one event per line to `agent_trace.jsonl`;
+- reconstructed chronological traces by `request_id`;
+- reduced event streams into per-request summaries;
+- debugged a duplicate `model_call` schema that caused `KeyError: estimated_cost_usd`;
+- fixed a stale tool-name trace inconsistency and a policy-order bug where a high-risk tool was not also authorized;
+- aggregated traces into request count, average latency, tokens, cost, execution errors, final-state counts, and rates;
+- added threshold-based alerts for high execution-error and blocked-request rates;
+- identified that test-heavy traffic can distort operational metrics.
 
 **Score changes:**
 
 | Skill area | Before | After | Reason |
 |---|---:|---:|---|
-| Agent Security / Threat Modeling | 4.5 | 5.25 | Hands-on testing of indirect injection, poisoned tool output, unauthorized capability attempts, exfiltration risk, and model-vs-system compromise boundaries |
-| Deterministic Gates / Policy Controls | 5.0 | 5.25 | Exercised ordered allowlist/approval/allow decisions and added deterministic pre-model secret redaction |
+| AI Observability / Tracing / Cost | 1.5 | 3.0 | Implemented correlated model/tool/policy/state telemetry, JSONL persistence, latency/token/cost tracking, trace reconstruction, request summaries, aggregate metrics/rates, and threshold alerts |
 
-**Why the increases are limited:** The attack cases and defenses were small, scripted, and heavily guided. No automated adversarial corpus, repeat-run attack metrics, provenance enforcement, robust DLP, sandboxing, capability tokens, production policy engine, or unknown deployed black-box target was implemented.
+**Why other scores did not increase:** The lab reused the existing tool, policy, and state concepts. The new evidence is primarily instrumentation and analysis, not deeper orchestration or policy implementation.
+
+**Important design lessons:** observability must distinguish model intent, policy authorization, execution outcome, and workflow state; logs themselves need consistent schemas and correct runtime values; and aggregate metrics only have meaning when the traffic population is understood.
+
+**Limitations:** local JSONL only; no OpenTelemetry/LangSmith/CloudWatch/OpenSearch backend, no distributed spans, dashboards, percentile latency, production retention, schema versioning, real FSM instrumentation, or baseline-derived alert thresholds.
 
 ---
 
@@ -202,32 +224,28 @@ The user explicitly recognized that the code itself is mostly simple `if/else`; 
 | 8 | RAG / Retrieval | Semantic retrieval, top-k, threshold, grounded answer, source attribution | **Completed** |
 | 9 | Persistent State / Memory | Durable investigation and pending-action state across restart | **Completed** |
 | 10 | Agent Security | Prompt injection, poisoned tool output, exfiltration, permission boundaries | **Completed** |
-| 11 | Observability | Trace model calls, tools, states, policy decisions, latency, tokens, cost | **Next** |
-| 12 | Cloud / Kubernetes Deployment | Workload identity, least privilege, secrets, network/pod controls | Planned |
+| 11 | Observability | Correlated model/tool/policy/state traces, cost/latency, metrics and alerts | **Completed** |
+| 12 | Cloud / Kubernetes Deployment | Workload identity, least privilege, secrets, network/pod controls | **Next** |
 
 ---
 
-## Lab 11 Target Architecture
+## Lab 12 Target Architecture
 
 ```text
-request
+containerized AI application
         ↓
-trace / request ID
+cloud / Kubernetes workload identity
         ↓
-model call ── record model, latency, tokens, errors
+least-privilege access to secrets + cloud services
         ↓
-tool request ── record tool + validated args
+network / pod / runtime controls
         ↓
-policy decision ── record allow / block / approval reason
+model API + tools + persistence
         ↓
-tool execution ── record success / failure / latency
-        ↓
-state transition ── record from / to
-        ↓
-final result + approximate cost
+centralized logs / traces / metrics
 ```
 
-Lab 11 should make the existing agent behavior observable enough to answer what happened, why it happened, how long it took, which model/tools were involved, and what it cost.
+Lab 12 should move the application from local-only code toward a realistic deployment boundary while preserving the security, persistence, and observability controls built in earlier labs.
 
 ---
 
@@ -245,8 +263,8 @@ Lab 11 should make the existing agent behavior observable enough to answer what 
 9. RAG                                DONE
 10. persistent state / memory         DONE
 11. deeper agent security             DONE
-12. observability                     NEXT
-13. AWS/Kubernetes deployment
+12. observability                     DONE
+13. AWS/Kubernetes deployment         NEXT
 ```
 
 Do not rely heavily on agent frameworks at the beginning. Implement the first versions directly enough to understand model calls, validation, state, tool execution, retry behavior, retrieval, persistence, security boundaries, and observability before adding orchestration frameworks.
