@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 14, 2026  
+**Last updated:** September 16, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated labs contain demonstrated implementation evidence. Discussion or recognition alone does not raise a score.
@@ -30,9 +30,11 @@ Tool execution
 Persist outcome / evaluate / bounded retry / escalate / finish
         ↓
 Trace / measure / alert
+        ↓
+Secure deployment boundary
 ```
 
-The long-term target is a security-focused AI application that can retrieve trusted knowledge, preserve workflow state across restart, collect evidence, choose approved tools, reason over results, verify outputs against explicit criteria, use bounded correction when appropriate, require deterministic policy/approval before high-risk actions, and make model/tool/workflow behavior observable.
+The long-term target is a security-focused AI application that can retrieve trusted knowledge, preserve workflow state across restart, collect evidence, choose approved tools, reason over results, verify outputs against explicit criteria, use bounded correction when appropriate, require deterministic policy/approval before high-risk actions, make model/tool/workflow behavior observable, and run behind a defensible deployment boundary.
 
 ---
 
@@ -51,12 +53,12 @@ The long-term target is a security-focused AI application that can retrieve trus
 | RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
 | Agent Memory / Persistent State | 1.5 | 3.0 | 7.5 | +1.5 | SQLite-backed investigation state and pending actions, restart recovery, FSM reconstruction, persistent approve/reject and success/failure outcomes |
 | Agent Security / Threat Modeling | 3.5 | 5.25 | 8.5 | +1.75 | Indirect prompt injection, poisoned tool output, authorization/approval boundaries, capability allowlisting, exfiltration controls, model-vs-system compromise analysis |
-| AI Application Deployment | 3.0 | 3.5 | 7.5 | +0.5 | Lab 1 Docker deployment; newer LLM/tool/FSM/eval/retry/RAG/persistence/security/observability code not yet redeployed in container/cloud |
+| AI Application Deployment | 3.0 | 4.5 | 7.5 | +1.5 | Docker/FastAPI deployment, Minikube Deployment/Service, Secrets, probes, self-healing, scaling, resource controls, non-root runtime, ServiceAccount-token reduction, failure testing |
 | AI Observability / Tracing / Cost | 1.5 | 3.0 | 7.5 | +1.5 | Request correlation, model latency/tokens/cost, tool/policy/state events, JSONL traces, request summaries, aggregate metrics/rates, threshold alerts |
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260914-lab11)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260916-lab12)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
@@ -178,35 +180,39 @@ Stress-tested agent trust boundaries with indirect prompt injection, poisoned to
 
 **Evidence:** [Lab 11](2026-09-14-lab-11-observability.md)
 
-Built a local correlated telemetry pipeline around an LLM/agent workflow:
+Built a local correlated telemetry pipeline around an LLM/agent workflow: model latency/tokens/cost, request IDs, tool intent, policy decisions, execution status, simplified workflow state, JSONL persistence, per-request trace reconstruction, summaries, aggregate metrics/rates, and threshold alerts. Debugging also exposed duplicate-event schema issues, stale runtime values, and policy-order inconsistencies.
 
-- measured model-call latency with `time.perf_counter()`;
-- captured model name, input/output/total tokens, output, and approximate API cost;
-- generated a UUID `request_id` and used it across model, tool, policy, execution, and state events;
-- logged model tool intent separately from deterministic policy decisions and actual execution;
-- dynamically recorded `allow`, `block`, and `require_approval` policy outcomes;
-- simulated success and failure tool paths and logged `success` vs `error` execution status;
-- connected execution/policy outcome to simplified workflow state (`completed`, `blocked`, `awaiting_approval`);
-- serialized events to JSON and appended one event per line to `agent_trace.jsonl`;
-- reconstructed chronological traces by `request_id`;
-- reduced event streams into per-request summaries;
-- debugged a duplicate `model_call` schema that caused `KeyError: estimated_cost_usd`;
-- fixed a stale tool-name trace inconsistency and a policy-order bug where a high-risk tool was not also authorized;
-- aggregated traces into request count, average latency, tokens, cost, execution errors, final-state counts, and rates;
-- added threshold-based alerts for high execution-error and blocked-request rates;
-- identified that test-heavy traffic can distort operational metrics.
+**Score changes:** AI Observability / Tracing / Cost 1.5→3.0.
 
-**Score changes:**
+**Limitations:** local JSONL only; no OpenTelemetry/LangSmith/CloudWatch/OpenSearch backend, distributed spans, dashboards, percentile latency, production retention, schema versioning, real FSM instrumentation, or baseline-derived alert thresholds.
 
-| Skill area | Before | After | Reason |
-|---|---:|---:|---|
-| AI Observability / Tracing / Cost | 1.5 | 3.0 | Implemented correlated model/tool/policy/state telemetry, JSONL persistence, latency/token/cost tracking, trace reconstruction, request summaries, aggregate metrics/rates, and threshold alerts |
+---
 
-**Why other scores did not increase:** The lab reused the existing tool, policy, and state concepts. The new evidence is primarily instrumentation and analysis, not deeper orchestration or policy implementation.
+### September 16, 2026 — Lab 12: Cloud / Kubernetes Deployment
 
-**Important design lessons:** observability must distinguish model intent, policy authorization, execution outcome, and workflow state; logs themselves need consistent schemas and correct runtime values; and aggregate metrics only have meaning when the traffic population is understood.
+**Evidence:** [Lab 12](2026-09-16-lab-12-cloud-kubernetes-deployment.md)
 
-**Limitations:** local JSONL only; no OpenTelemetry/LangSmith/CloudWatch/OpenSearch backend, no distributed spans, dashboards, percentile latency, production retention, schema versioning, real FSM instrumentation, or baseline-derived alert thresholds.
+Moved a minimal AI-backed FastAPI service into a local Kubernetes deployment boundary and exercised the runtime behavior directly:
+
+- built and tested a Docker image, then loaded it into Minikube's separate image store;
+- switched `kubectl` from an old GKE context to a healthy local Minikube context;
+- stored `OPENAI_API_KEY` in a Kubernetes Secret and injected it only at container runtime;
+- created a Deployment with health probes and a ClusterIP Service, then verified a real OpenAI request through Service → Pod → FastAPI;
+- demonstrated desired-state reconciliation by deleting a Pod and observing automatic replacement;
+- scaled from 1 to 3 replicas and verified three Service endpoints;
+- distinguished replica-count changes from Pod-template changes and observed new ReplicaSet hashes during rolling updates;
+- added CPU/memory requests and limits;
+- rebuilt the image as `v2` with UID 10001 and enforced `runAsNonRoot`, fixed UID, no privilege escalation, and dropped capabilities;
+- disabled automatic ServiceAccount token mounting because the application does not call the Kubernetes API;
+- tested missing-secret failure (`CreateContainerConfigError`);
+- tested an unusable/empty secret value that allowed container startup but caused the application to exit and enter `CrashLoopBackOff`;
+- used previous-container logs to identify the OpenAI missing-credentials exception.
+
+The lab also clarified that Docker supplies the image/container layer while Kubernetes supplies orchestration, desired state, scaling, self-healing, Service discovery, runtime configuration, and workload controls.
+
+**Score changes:** AI Application Deployment 3.5→4.5.
+
+**Why the increase is limited:** The implementation was heavily guided and local. No EKS/ECR, workload identity, external secret manager, registry-based rollout, ingress/TLS, NetworkPolicy, autoscaling, CI/CD deployment, image admission/signing, or independent production architecture was demonstrated.
 
 ---
 
@@ -225,27 +231,48 @@ Built a local correlated telemetry pipeline around an LLM/agent workflow:
 | 9 | Persistent State / Memory | Durable investigation and pending-action state across restart | **Completed** |
 | 10 | Agent Security | Prompt injection, poisoned tool output, exfiltration, permission boundaries | **Completed** |
 | 11 | Observability | Correlated model/tool/policy/state traces, cost/latency, metrics and alerts | **Completed** |
-| 12 | Cloud / Kubernetes Deployment | Workload identity, least privilege, secrets, network/pod controls | **Next** |
+| 12 | Cloud / Kubernetes Deployment | Containerized service, Kubernetes desired state, Secrets, Service routing, scaling/self-healing, runtime hardening | **Completed** |
 
 ---
 
-## Lab 12 Target Architecture
+## First-Pass Roadmap Complete
+
+All 12 guided first-pass labs are complete.
+
+The next phase should be an **advanced/integrated second pass** with less scaffolding. Instead of another sequence of isolated mini-labs, the goal should be to combine the existing pieces into a more coherent application and require more independent design decisions.
+
+Suggested second-pass direction:
 
 ```text
-containerized AI application
-        ↓
-cloud / Kubernetes workload identity
-        ↓
-least-privilege access to secrets + cloud services
-        ↓
-network / pod / runtime controls
-        ↓
-model API + tools + persistence
-        ↓
-centralized logs / traces / metrics
+FastAPI boundary
+    ↓
+structured LLM decision
+    ↓
+retrieval + persistent investigation state
+    ↓
+validated tool calls
+    ↓
+policy / approval / FSM
+    ↓
+bounded evaluation/retry
+    ↓
+security controls
+    ↓
+structured observability
+    ↓
+containerized Kubernetes deployment
 ```
 
-Lab 12 should move the application from local-only code toward a realistic deployment boundary while preserving the security, persistence, and observability controls built in earlier labs.
+Key gaps to target next:
+
+- independent multi-step orchestration rather than guided single-path code;
+- clearer action-state vs investigation-state separation;
+- real multi-tool loops with bounded termination;
+- more realistic RAG chunking/vector-store/retrieval evaluation;
+- production-style trace/span instrumentation;
+- deploy the integrated agent rather than a minimal deployment-only API;
+- cloud registry/workload identity/external secret-manager integration when AWS access is ready;
+- more independent implementation with fewer supplied code blocks.
 
 ---
 
@@ -264,16 +291,17 @@ Lab 12 should move the application from local-only code toward a realistic deplo
 10. persistent state / memory         DONE
 11. deeper agent security             DONE
 12. observability                     DONE
-13. AWS/Kubernetes deployment         NEXT
+13. local Kubernetes deployment       DONE
+14. integrated/advanced second pass   NEXT
 ```
 
-Do not rely heavily on agent frameworks at the beginning. Implement the first versions directly enough to understand model calls, validation, state, tool execution, retry behavior, retrieval, persistence, security boundaries, and observability before adding orchestration frameworks.
+Do not rely heavily on agent frameworks until the direct implementation boundaries are comfortable. The second pass should increase independence before adding heavier orchestration abstractions.
 
 ---
 
 ## Evidence Rules for Future Updates
 
-After each lab, create a dated Markdown note under `ai-engineering/` containing:
+After each lab/project milestone, create a dated Markdown note under `ai-engineering/` containing:
 
 1. Goal and architecture.
 2. Commands/code used.
