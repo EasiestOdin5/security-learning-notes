@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 16, 2026  
+**Last updated:** September 18, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated labs contain demonstrated implementation evidence. Discussion or recognition alone does not raise a score.
@@ -43,7 +43,7 @@ The long-term target is a security-focused AI application that can retrieve trus
 | Skill area | Initial | Current | Goal | Change | Evidence status |
 |---|---:|---:|---:|---:|---|
 | LLM API Fundamentals | 2.0 | 3.0 | 8.0 | +1.0 | Responses API, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling |
-| Structured Outputs / Schemas | 2.0 | 3.5 | 8.0 | +1.5 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation |
+| Structured Outputs / Schemas | 2.0 | 3.75 | 8.0 | +1.75 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation, Pass 2 independent API-schema reconstruction |
 | Tool / Function Calling | 2.0 | 3.75 | 8.0 | +1.75 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, result return, approval-gated actions |
 | Agent Orchestration | 2.5 | 3.0 | 8.0 | +0.5 | Guided model/tool workflow with shared investigation state; general multi-action/tool-loop limitation remains |
 | State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal transitions, deterministic enforcement, terminal outcomes |
@@ -53,12 +53,12 @@ The long-term target is a security-focused AI application that can retrieve trus
 | RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
 | Agent Memory / Persistent State | 1.5 | 3.0 | 7.5 | +1.5 | SQLite-backed investigation state and pending actions, restart recovery, FSM reconstruction, persistent approve/reject and success/failure outcomes |
 | Agent Security / Threat Modeling | 3.5 | 5.25 | 8.5 | +1.75 | Indirect prompt injection, poisoned tool output, authorization/approval boundaries, capability allowlisting, exfiltration controls, model-vs-system compromise analysis |
-| AI Application Deployment | 3.0 | 4.5 | 7.5 | +1.5 | Docker/FastAPI deployment, Minikube Deployment/Service, Secrets, probes, self-healing, scaling, resource controls, non-root runtime, ServiceAccount-token reduction, failure testing |
+| AI Application Deployment | 3.0 | 4.75 | 7.5 | +1.75 | Docker/FastAPI deployment, Minikube Deployment/Service, Secrets, probes, self-healing, scaling, resource controls, non-root runtime, ServiceAccount-token reduction, failure testing, Pass 2 independent Docker reconstruction |
 | AI Observability / Tracing / Cost | 1.5 | 3.0 | 7.5 | +1.5 | Request correlation, model latency/tokens/cost, tool/policy/state events, JSONL traces, request summaries, aggregate metrics/rates, threshold alerts |
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260916-lab12)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260918-pass2-lab1)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
@@ -213,6 +213,39 @@ The lab also clarified that Docker supplies the image/container layer while Kube
 **Score changes:** AI Application Deployment 3.5→4.5.
 
 **Why the increase is limited:** The implementation was heavily guided and local. No EKS/ECR, workload identity, external secret manager, registry-based rollout, ingress/TLS, NetworkPolicy, autoscaling, CI/CD deployment, image admission/signing, or independent production architecture was demonstrated.
+
+---
+
+### September 18, 2026 — Pass 2 Lab 1: FastAPI JSON Alert Receiver
+
+**Evidence:** [Pass 2 Lab 1](2026-09-18-pass2-lab-01-fastapi-json-alert-receiver.md)
+
+Rebuilt the first lab from a design brief without supplied implementation code. Independently implemented FastAPI endpoints, a Pydantic `Alert` model, `IPvAnyAddress` validation, enum-based severity validation, a non-empty username constraint, valid/invalid request testing, and a Docker build/run path. Several Pass 1 concepts were refreshed through questions, but the implementation itself was reconstructed rather than copied.
+
+**Score changes:** Structured Outputs / Schemas 3.5→3.75; AI Application Deployment 4.5→4.75.
+
+**Why the increases are limited:** architecture and task sequencing were still supplied, and several implementation concepts required reminders. This is evidence of stronger implementation independence, not yet independent system design.
+
+---
+
+## Pass 2 Roadmap
+
+Pass 2 uses the same 12-topic sequence with a different evidence standard: the design goal is provided, but implementation code is not supplied unless specifically needed after an attempt.
+
+| Pass 2 Lab | Topic | Independence target | Status |
+|---:|---|---|---|
+| 1 | JSON Alert Receiver | Rebuild FastAPI + Pydantic + Docker from design brief | **Completed** |
+| 2 | Structured LLM Alert Triage | Rebuild LLM structured-output path from design brief | **Next** |
+| 3 | Read-Only Investigation Tools | Rebuild validated tool-calling path | Planned |
+| 4 | Policy-Gated Tools | Rebuild deterministic approval boundary | Planned |
+| 5 | Investigation State Machine | Rebuild FSM and legal transitions | Planned |
+| 6 | Rubrics and Evaluation | Rebuild evaluation harness | Planned |
+| 7 | Bounded Self-Correction | Rebuild evaluator-driven bounded retry | Planned |
+| 8 | RAG / Retrieval | Rebuild retrieval pipeline | Planned |
+| 9 | Persistent State / Memory | Rebuild persistence and recovery | Planned |
+| 10 | Agent Security | Rebuild and test agent trust boundaries | Planned |
+| 11 | Observability | Rebuild correlated telemetry and metrics | Planned |
+| 12 | Kubernetes Deployment | Rebuild deployment/hardening path | Planned |
 
 ---
 
