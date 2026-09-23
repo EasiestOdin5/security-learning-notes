@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 18, 2026  
+**Last updated:** September 22, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated labs contain demonstrated implementation evidence. Discussion or recognition alone does not raise a score.
@@ -42,12 +42,12 @@ The long-term target is a security-focused AI application that can retrieve trus
 
 | Skill area | Initial | Current | Goal | Change | Evidence status |
 |---|---:|---:|---:|---:|---|
-| LLM API Fundamentals | 2.0 | 3.0 | 8.0 | +1.0 | Responses API, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling |
-| Structured Outputs / Schemas | 2.0 | 3.75 | 8.0 | +1.75 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation, Pass 2 independent API-schema reconstruction |
+| LLM API Fundamentals | 2.0 | 3.25 | 8.0 | +1.25 | Responses API, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling, Pass 2 triage reconstruction and 503 testing |
+| Structured Outputs / Schemas | 2.0 | 4.0 | 8.0 | +2.0 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation, Pass 2 independent API/LLM-schema reconstruction |
 | Tool / Function Calling | 2.0 | 3.75 | 8.0 | +1.75 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, result return, approval-gated actions |
 | Agent Orchestration | 2.5 | 3.0 | 8.0 | +0.5 | Guided model/tool workflow with shared investigation state; general multi-action/tool-loop limitation remains |
 | State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal transitions, deterministic enforcement, terminal outcomes |
-| Deterministic Gates / Policy Controls | 3.0 | 5.25 | 8.0 | +2.25 | Input/review gates, tool allowlist, argument/policy validation, approval, deterministic state transitions, pre-model secret redaction |
+| Deterministic Gates / Policy Controls | 3.0 | 5.5 | 8.0 | +2.5 | Input/review gates, tool allowlist, argument/policy validation, approval, deterministic state transitions, pre-model secret redaction, Pass 2 independently tested confidence gate |
 | Evaluation / Rubrics | 2.0 | 3.0 | 8.0 | +1.0 | Repeatable eval harness, ground-truth state/tool expectations, PASS/FAIL summary, intentional regression test |
 | Self-Correction / Bounded Retry | 2.0 | 3.0 | 7.5 | +1.0 | Fixed retry budget, evaluator feedback, real LLM correction, deterministic hard-stop behavior |
 | RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
@@ -58,7 +58,7 @@ The long-term target is a security-focused AI application that can retrieve trus
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260918-pass2-lab1)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260922-pass2-lab2)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
@@ -228,6 +228,18 @@ Rebuilt the first lab from a design brief without supplied implementation code. 
 
 ---
 
+### September 22, 2026 — Pass 2 Lab 2: Structured LLM Alert Triage
+
+**Evidence:** [Pass 2 Lab 2](2026-09-22-pass2-lab-02-structured-llm-alert-triage.md)
+
+Reconstructed a FastAPI/OpenAI Responses API structured triage route using a constrained Pydantic assessment, an explicit `irrelevant` classification, and a deterministic `confidence < 0.70` review gate separated from model-provided `needs_investigation`. Independently exercised low/high simulated gate values, verified invalid-key error translation as HTTP 503 in a rebuilt Docker image, and confirmed a valid-key HTTP 200 result with both assessment and review flag. Explored Docker image storage and `docker save`/`docker load` portability without demonstrating an image transfer.
+
+**Score changes:** LLM API Fundamentals 3.0→3.25; Structured Outputs / Schemas 3.75→4.0; Deterministic Gates / Policy Controls 5.25→5.5.
+
+**Limits:** The API architecture, exception choice, testing methods, and some syntax corrections remained guided. The review threshold is not calibrated; no separate relevance model, independent security-evaluation suite, production error taxonomy, or second-host image-transfer test was implemented.
+
+---
+
 ## Pass 2 Roadmap
 
 Pass 2 uses the same 12-topic sequence with a different evidence standard: the design goal is provided, but implementation code is not supplied unless specifically needed after an attempt.
@@ -235,8 +247,8 @@ Pass 2 uses the same 12-topic sequence with a different evidence standard: the d
 | Pass 2 Lab | Topic | Independence target | Status |
 |---:|---|---|---|
 | 1 | JSON Alert Receiver | Rebuild FastAPI + Pydantic + Docker from design brief | **Completed** |
-| 2 | Structured LLM Alert Triage | Rebuild LLM structured-output path from design brief | **Next** |
-| 3 | Read-Only Investigation Tools | Rebuild validated tool-calling path | Planned |
+| 2 | Structured LLM Alert Triage | Rebuild LLM structured-output path from design brief | **Completed** |
+| 3 | Read-Only Investigation Tools | Rebuild validated tool-calling path | **Next** |
 | 4 | Policy-Gated Tools | Rebuild deterministic approval boundary | Planned |
 | 5 | Investigation State Machine | Rebuild FSM and legal transitions | Planned |
 | 6 | Rubrics and Evaluation | Rebuild evaluation harness | Planned |
