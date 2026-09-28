@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 22, 2026  
+**Last updated:** September 28, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated labs contain demonstrated implementation evidence. Discussion or recognition alone does not raise a score.
@@ -42,12 +42,12 @@ The long-term target is a security-focused AI application that can retrieve trus
 
 | Skill area | Initial | Current | Goal | Change | Evidence status |
 |---|---:|---:|---:|---:|---|
-| LLM API Fundamentals | 2.0 | 3.25 | 8.0 | +1.25 | Responses API, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling, Pass 2 triage reconstruction and 503 testing |
-| Structured Outputs / Schemas | 2.0 | 4.0 | 8.0 | +2.0 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation, Pass 2 independent API/LLM-schema reconstruction |
-| Tool / Function Calling | 2.0 | 3.75 | 8.0 | +1.75 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, result return, approval-gated actions |
-| Agent Orchestration | 2.5 | 3.0 | 8.0 | +0.5 | Guided model/tool workflow with shared investigation state; general multi-action/tool-loop limitation remains |
+| LLM API Fundamentals | 2.0 | 3.5 | 8.0 | +1.5 | Responses API, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling, Pass 2 tool-call continuation with call IDs and previous-response context |
+| Structured Outputs / Schemas | 2.0 | 4.25 | 8.0 | +2.25 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation, Pass 2 independent API/LLM/tool schema reconstruction |
+| Tool / Function Calling | 2.0 | 4.25 | 8.0 | +2.25 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, validated execution, function-call output return, approval-gated actions |
+| Agent Orchestration | 2.5 | 3.25 | 8.0 | +0.75 | Guided model/tool/model workflow with multiple independent calls and response continuation; general bounded multi-round tool-loop limitation remains |
 | State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal transitions, deterministic enforcement, terminal outcomes |
-| Deterministic Gates / Policy Controls | 3.0 | 5.5 | 8.0 | +2.5 | Input/review gates, tool allowlist, argument/policy validation, approval, deterministic state transitions, pre-model secret redaction, Pass 2 independently tested confidence gate |
+| Deterministic Gates / Policy Controls | 3.0 | 5.75 | 8.0 | +2.75 | Input/review gates, tool allowlist, argument/Pydantic validation, approval, deterministic state transitions, pre-model secret redaction, Pass 2 execution-gate reconstruction |
 | Evaluation / Rubrics | 2.0 | 3.0 | 8.0 | +1.0 | Repeatable eval harness, ground-truth state/tool expectations, PASS/FAIL summary, intentional regression test |
 | Self-Correction / Bounded Retry | 2.0 | 3.0 | 7.5 | +1.0 | Fixed retry budget, evaluator feedback, real LLM correction, deterministic hard-stop behavior |
 | RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
@@ -58,7 +58,7 @@ The long-term target is a security-focused AI application that can retrieve trus
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260922-pass2-lab2)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260928-pass2-lab3)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
@@ -240,6 +240,18 @@ Reconstructed a FastAPI/OpenAI Responses API structured triage route using a con
 
 ---
 
+### September 28, 2026 — Pass 2 Lab 3: Read-Only Investigation Tools
+
+**Evidence:** [Pass 2 Lab 3](2026-09-28-pass2-lab-03-read-only-investigation-tools.md)
+
+Rebuilt the read-only tool-calling path across the full model → tool-request → deterministic dispatch/validation → Python execution → function-call-output → model-assessment sequence. Added explicit JSON Schema tool definitions, Python-side allowlisting/dispatch, Pydantic argument models, `call_id` correlation, `previous_response_id` continuation, and a final structured `InvestigationAssessment`. Verified the Alice scenario with both user-activity and IP-reputation tools and identified a grounding hallucination in the free-form response before moving to structured output.
+
+**Score changes:** LLM API Fundamentals 3.25→3.5; Structured Outputs / Schemas 4.0→4.25; Tool / Function Calling 3.75→4.25; Agent Orchestration 3.0→3.25; Deterministic Gates / Policy Controls 5.5→5.75.
+
+**Limits:** The sequence remained guided, invalid argument failures are not yet handled cleanly, the tool loop is only one selection round rather than a bounded general loop, confidence is uncalibrated, and grounding quality still needs stronger controls. No Agent Security score increase was awarded for discussion alone.
+
+---
+
 ## Pass 2 Roadmap
 
 Pass 2 uses the same 12-topic sequence with a different evidence standard: the design goal is provided, but implementation code is not supplied unless specifically needed after an attempt.
@@ -248,8 +260,8 @@ Pass 2 uses the same 12-topic sequence with a different evidence standard: the d
 |---:|---|---|---|
 | 1 | JSON Alert Receiver | Rebuild FastAPI + Pydantic + Docker from design brief | **Completed** |
 | 2 | Structured LLM Alert Triage | Rebuild LLM structured-output path from design brief | **Completed** |
-| 3 | Read-Only Investigation Tools | Rebuild validated tool-calling path | **Next** |
-| 4 | Policy-Gated Tools | Rebuild deterministic approval boundary | Planned |
+| 3 | Read-Only Investigation Tools | Rebuild validated tool-calling path | **Completed** |
+| 4 | Policy-Gated Tools | Rebuild deterministic approval boundary | **Next** |
 | 5 | Investigation State Machine | Rebuild FSM and legal transitions | Planned |
 | 6 | Rubrics and Evaluation | Rebuild evaluation harness | Planned |
 | 7 | Bounded Self-Correction | Rebuild evaluator-driven bounded retry | Planned |
