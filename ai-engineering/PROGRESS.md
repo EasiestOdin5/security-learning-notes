@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 29, 2026  
+**Last updated:** September 30, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated labs contain demonstrated implementation evidence. Discussion or recognition alone does not raise a score.
@@ -45,9 +45,9 @@ The long-term target is a security-focused AI application that can retrieve trus
 | LLM API Fundamentals | 2.0 | 3.5 | 8.0 | +1.5 | Responses API, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling, Pass 2 tool-call continuation with call IDs and previous-response context |
 | Structured Outputs / Schemas | 2.0 | 4.25 | 8.0 | +2.25 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation, Pass 2 independent API/LLM/tool schema reconstruction |
 | Tool / Function Calling | 2.0 | 4.5 | 8.0 | +2.5 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, validated execution, function-call output return, approval-gated actions, Pass 2 state-changing tool reconstruction |
-| Agent Orchestration | 2.5 | 3.5 | 8.0 | +1.0 | Guided multi-turn model/tool workflow with multiple independent calls, response continuation, and a second tool-enabled turn; general bounded reusable tool-loop limitation remains |
-| State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal transitions, deterministic enforcement, terminal outcomes |
-| Deterministic Gates / Policy Controls | 3.0 | 6.25 | 8.0 | +3.25 | Input/review gates, tool allowlist, argument/Pydantic validation, UUID-scoped human approval/rejection, deterministic state transitions, pre-model secret redaction, Pass 2 execution-gate reconstruction |
+| Agent Orchestration | 2.5 | 3.75 | 8.0 | +1.25 | Guided multi-turn model/tool workflow with response continuation, second tool-enabled turns, and Pass 2 explicit FSM integration across investigate/approve/reject paths; general bounded reusable tool-loop limitation remains |
+| State Machines / Workflow Control | 2.5 | 4.0 | 8.0 | +1.5 | Explicit FSM states, legal-transition table, centralized enforcement, terminal outcomes, Pass 2 API integration, and direct illegal-transition testing |
+| Deterministic Gates / Policy Controls | 3.0 | 6.5 | 8.0 | +3.5 | Input/review gates, tool allowlist, argument/Pydantic validation, UUID-scoped human approval/rejection, explicit legal workflow transitions, pre-model secret redaction, Pass 2 execution-gate/FSM reconstruction |
 | Evaluation / Rubrics | 2.0 | 3.0 | 8.0 | +1.0 | Repeatable eval harness, ground-truth state/tool expectations, PASS/FAIL summary, intentional regression test |
 | Self-Correction / Bounded Retry | 2.0 | 3.0 | 7.5 | +1.0 | Fixed retry budget, evaluator feedback, real LLM correction, deterministic hard-stop behavior |
 | RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
@@ -58,7 +58,7 @@ The long-term target is a security-focused AI application that can retrieve trus
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260929-pass2-lab4)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260930-pass2-lab5)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
@@ -264,6 +264,18 @@ Extended the validated tool workflow with a state-changing `disable_user` action
 
 ---
 
+### September 30, 2026 — Pass 2 Lab 5: Investigation State Machine
+
+**Evidence:** [Pass 2 Lab 5](2026-09-30-pass2-lab-05-investigation-state-machine.md)
+
+Rebuilt the investigation FSM in a separate module with explicit states, a legal-transition table, centralized `transition_to()` enforcement, and FastAPI-side `ValueError → HTTPException` translation. Integrated the state machine across `/investigate`, `/approve`, and `/reject`, including no-approval completion, approval execution, rejection/blocking, and execution-failure paths. Exposed investigation state in API responses and directly verified both terminal paths and an illegal `NEW → COMPLETED` transition that correctly raised `ValueError`.
+
+**Score changes:** Agent Orchestration 3.5→3.75; State Machines / Workflow Control 3.5→4.0; Deterministic Gates / Policy Controls 6.25→6.5.
+
+**Limits:** state remains in-memory and is attached to pending actions rather than a dedicated investigation record; action status and investigation state can drift; tool-processing logic is duplicated; no concurrency/transaction handling exists; no automated FSM regression suite yet.
+
+---
+
 ## Pass 2 Roadmap
 
 Pass 2 uses the same 12-topic sequence with a different evidence standard: the design goal is provided, but implementation code is not supplied unless specifically needed after an attempt.
@@ -274,8 +286,8 @@ Pass 2 uses the same 12-topic sequence with a different evidence standard: the d
 | 2 | Structured LLM Alert Triage | Rebuild LLM structured-output path from design brief | **Completed** |
 | 3 | Read-Only Investigation Tools | Rebuild validated tool-calling path | **Completed** |
 | 4 | Policy-Gated Tools | Rebuild deterministic approval boundary | **Completed** |
-| 5 | Investigation State Machine | Rebuild FSM and legal transitions | **Next** |
-| 6 | Rubrics and Evaluation | Rebuild evaluation harness | Planned |
+| 5 | Investigation State Machine | Rebuild FSM and legal transitions | **Completed** |
+| 6 | Rubrics and Evaluation | Rebuild evaluation harness | **Next** |
 | 7 | Bounded Self-Correction | Rebuild evaluator-driven bounded retry | Planned |
 | 8 | RAG / Retrieval | Rebuild retrieval pipeline | Planned |
 | 9 | Persistent State / Memory | Rebuild persistence and recovery | Planned |
