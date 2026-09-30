@@ -1,7 +1,7 @@
 # AI Engineering Hands-On Progress Tracker
 
 **Baseline date:** September 1, 2026  
-**Last updated:** September 28, 2026  
+**Last updated:** September 29, 2026  
 **Primary direction:** Applied / Agentic AI Engineering with a security focus  
 **Scale:** 0–10, where 10 represents strong specialist-level working knowledge  
 **Scoring policy:** Scores change only when dated labs contain demonstrated implementation evidence. Discussion or recognition alone does not raise a score.
@@ -44,21 +44,21 @@ The long-term target is a security-focused AI application that can retrieve trus
 |---|---:|---:|---:|---:|---|
 | LLM API Fundamentals | 2.0 | 3.5 | 8.0 | +1.5 | Responses API, structured parsing, function-call continuation, environment-key handling, FastAPI integration, API-error handling, Pass 2 tool-call continuation with call IDs and previous-response context |
 | Structured Outputs / Schemas | 2.0 | 4.25 | 8.0 | +2.25 | Pydantic API/LLM schemas, JSON Schema tool definitions, execution-time validation, Pass 2 independent API/LLM/tool schema reconstruction |
-| Tool / Function Calling | 2.0 | 4.25 | 8.0 | +2.25 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, validated execution, function-call output return, approval-gated actions |
-| Agent Orchestration | 2.5 | 3.25 | 8.0 | +0.75 | Guided model/tool/model workflow with multiple independent calls and response continuation; general bounded multi-round tool-loop limitation remains |
+| Tool / Function Calling | 2.0 | 4.5 | 8.0 | +2.5 | Read-only and state-changing tools, model-selected calls, dynamic dispatch, validated execution, function-call output return, approval-gated actions, Pass 2 state-changing tool reconstruction |
+| Agent Orchestration | 2.5 | 3.5 | 8.0 | +1.0 | Guided multi-turn model/tool workflow with multiple independent calls, response continuation, and a second tool-enabled turn; general bounded reusable tool-loop limitation remains |
 | State Machines / Workflow Control | 2.5 | 3.5 | 8.0 | +1.0 | Explicit FSM states, legal transitions, deterministic enforcement, terminal outcomes |
-| Deterministic Gates / Policy Controls | 3.0 | 5.75 | 8.0 | +2.75 | Input/review gates, tool allowlist, argument/Pydantic validation, approval, deterministic state transitions, pre-model secret redaction, Pass 2 execution-gate reconstruction |
+| Deterministic Gates / Policy Controls | 3.0 | 6.25 | 8.0 | +3.25 | Input/review gates, tool allowlist, argument/Pydantic validation, UUID-scoped human approval/rejection, deterministic state transitions, pre-model secret redaction, Pass 2 execution-gate reconstruction |
 | Evaluation / Rubrics | 2.0 | 3.0 | 8.0 | +1.0 | Repeatable eval harness, ground-truth state/tool expectations, PASS/FAIL summary, intentional regression test |
 | Self-Correction / Bounded Retry | 2.0 | 3.0 | 7.5 | +1.0 | Fixed retry budget, evaluator feedback, real LLM correction, deterministic hard-stop behavior |
 | RAG / Retrieval | 1.5 | 3.0 | 7.5 | +1.5 | End-to-end RAG with embeddings, cosine similarity, top-k, thresholding, source IDs, stored doc embeddings, grounding tests |
 | Agent Memory / Persistent State | 1.5 | 3.0 | 7.5 | +1.5 | SQLite-backed investigation state and pending actions, restart recovery, FSM reconstruction, persistent approve/reject and success/failure outcomes |
-| Agent Security / Threat Modeling | 3.5 | 5.25 | 8.5 | +1.75 | Indirect prompt injection, poisoned tool output, authorization/approval boundaries, capability allowlisting, exfiltration controls, model-vs-system compromise analysis |
+| Agent Security / Threat Modeling | 3.5 | 5.5 | 8.5 | +2.0 | Indirect prompt injection, poisoned tool output, authorization/approval boundaries, capability allowlisting, exfiltration controls, model-vs-system compromise analysis, Pass 2 human gate for high-impact action |
 | AI Application Deployment | 3.0 | 4.75 | 7.5 | +1.75 | Docker/FastAPI deployment, Minikube Deployment/Service, Secrets, probes, self-healing, scaling, resource controls, non-root runtime, ServiceAccount-token reduction, failure testing, Pass 2 independent Docker reconstruction |
 | AI Observability / Tracing / Cost | 1.5 | 3.0 | 7.5 | +1.5 | Request correlation, model latency/tokens/cost, tool/policy/state events, JSONL traces, request summaries, aggregate metrics/rates, threshold alerts |
 
 ### Progress Wheel
 
-![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260928-pass2-lab3)
+![AI engineering progress wheel showing topics around the outside, demonstrated progress from the center, and goal levels](assets/ai-engineering-progress-wheel.svg?v=20260929-pass2-lab4)
 
 The solid polygon is **current demonstrated progress**. The dashed outline is the target.
 
@@ -252,6 +252,18 @@ Rebuilt the read-only tool-calling path across the full model → tool-request �
 
 ---
 
+### September 29, 2026 — Pass 2 Lab 4: Policy-Gated Tools
+
+**Evidence:** [Pass 2 Lab 4](2026-09-29-pass2-lab-04-policy-gated-tools.md)
+
+Extended the validated tool workflow with a state-changing `disable_user` action protected by deterministic policy. Added an explicit `auto` vs `approval_required` policy map, UUID-keyed pending actions, exact stored-argument execution on approval, rejection without execution, 404/409 handling, and pending-action exposure through the API. During testing, identified and corrected an orchestration flaw where the second model turn had been converted to final structured parsing too early; restored a tool-enabled continuation turn so the model could actually request `disable_user`.
+
+**Score changes:** Tool / Function Calling 4.25→4.5; Agent Orchestration 3.25→3.5; Deterministic Gates / Policy Controls 5.75→6.25; Agent Security / Threat Modeling 5.25→5.5.
+
+**Limits:** pending actions are still in-memory; approvers are not authenticated/authorized; there is no durable audit log, TTL, concurrency control, transaction semantics, or reusable bounded tool loop. No State Machine increase was awarded because the workflow still uses status strings rather than a formal FSM.
+
+---
+
 ## Pass 2 Roadmap
 
 Pass 2 uses the same 12-topic sequence with a different evidence standard: the design goal is provided, but implementation code is not supplied unless specifically needed after an attempt.
@@ -261,8 +273,8 @@ Pass 2 uses the same 12-topic sequence with a different evidence standard: the d
 | 1 | JSON Alert Receiver | Rebuild FastAPI + Pydantic + Docker from design brief | **Completed** |
 | 2 | Structured LLM Alert Triage | Rebuild LLM structured-output path from design brief | **Completed** |
 | 3 | Read-Only Investigation Tools | Rebuild validated tool-calling path | **Completed** |
-| 4 | Policy-Gated Tools | Rebuild deterministic approval boundary | **Next** |
-| 5 | Investigation State Machine | Rebuild FSM and legal transitions | Planned |
+| 4 | Policy-Gated Tools | Rebuild deterministic approval boundary | **Completed** |
+| 5 | Investigation State Machine | Rebuild FSM and legal transitions | **Next** |
 | 6 | Rubrics and Evaluation | Rebuild evaluation harness | Planned |
 | 7 | Bounded Self-Correction | Rebuild evaluator-driven bounded retry | Planned |
 | 8 | RAG / Retrieval | Rebuild retrieval pipeline | Planned |
