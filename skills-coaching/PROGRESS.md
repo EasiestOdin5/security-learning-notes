@@ -1,7 +1,7 @@
 # Cybersecurity Practical Skills Coaching
 
 Baseline: 2026-10-08 (America/Los_Angeles)
-Last updated: 2026-10-08
+Last updated: 2026-10-09
 Purpose: Measure whether architectural understanding and investigative reasoning transfer to independent practical work.
 
 ## Assessment rules
@@ -57,9 +57,19 @@ Only sanitized learning conclusions belong in public notes; do not include priva
 
 ## Next step
 
-Diagnostic: Does HTTPS alone prevent malicious JavaScript executing inside the legitimate website from reading its session cookie? Explain why.
-Then introduce or verify HttpOnly according to the answer.
-Later practical target: predict and inspect Set-Cookie and Cookie behavior in a local controlled lab, one step at a time.
+Verify the direct Python HTTP client, then test JSON POST preflight. See the current checkpoint below.
+
+## 2026-10-09 checkpoint
+
+[HTTP, DOM and CORS evidence](2026-10-09-http-dom-cors-checkpoint.md)
+
+Guided practical evidence now supersedes the baseline's initially untested browser tasks:
+- Verified original HTTP response versus JavaScript-modified DOM.
+- Observed background JSON fetch and cross-origin GET returning 200 without readable JavaScript access.
+- Configured and verified allowed-origin response headers; tested omission for a disallowed origin.
+- Explained destination-controlled permission and transferred it to a new scenario.
+Independent reconstruction, retention, direct Python execution, preflight and credential/cookie interactions remain untested.
+This coaching is topic-driven and separate from other labs; no changes to their scores.
 
 ## Update format
 
