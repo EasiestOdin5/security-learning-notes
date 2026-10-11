@@ -5,6 +5,9 @@ Hands-on Python and software engineering practice using security investigation p
 ## Purpose
 Develop independent implementation skills: requirements, data structures, functions, validation, error handling, debugging, automated tests, and maintainable tooling. The initial project is a local AWS CloudTrail JSON investigation utility. The project will grow from a local parser to indexed investigations and, later, incremental processing and boto3 ingestion.
 
+## Progress tracking
+- [PROGRESS.md](PROGRESS.md): fixed initial baseline, current skill estimates, targets, evidence requirements, and milestone status.
+
 ## Checkpoints
 - [2026-10-11 — Python implementation baseline and CloudTrail parser](2026-10-11-python-cloudtrail-checkpoint.md)
 
