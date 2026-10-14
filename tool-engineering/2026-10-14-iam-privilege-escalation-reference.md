@@ -1,64 +1,278 @@
-# AWS IAM Privilege Escalation Reference
+# AWS IAM Privilege Escalation — Case-by-Case Walkthrough
 
 Reviewed: 2026-10-14
 
-Most of the supplied table is correct. These are potential escalation paths: a principal may have limited direct access while retaining permission to change permissions, create credentials for another user, or control code running under a stronger role.
+This reference follows the supplied notes for the Bishop Fox lab series ([part 1](https://www.youtube.com/watch?v=za_j7QvcsrY), [part 2](https://www.youtube.com/watch?v=TtoEGwhc5VE)). The core methods are valid; corrections mainly concern prerequisites and conditional outcomes. Mechanics were checked against Rhino Security Labs and AWS documentation. The videos, exact lab policies, usernames, group names, and profile labels were not independently verified; these names are retained as supplied examples. This is the supplied selection of 17 cases, not a claim that every method in either video is included.
 
-This reference preserves the supplied scenarios and corrects their prerequisites, outcomes, and command examples. It is a selected reference, not a complete inventory of AWS escalation methods. The `Update Lambda Code` row is restored from the original table.
+All outcomes depend on effective permissions: administrative allow policies do not override applicable explicit denies, permissions boundaries, session policies, or organization restrictions. IAM changes can take time to propagate. `Resource: "*"` is one broad starting configuration, not a universal requirement. [2]
 
-## Scope and lab assumptions
+Commands are templates, not executed results. Replace angle-bracket placeholders with actual lab values. JSON, ZIP, script, and template files must already contain the scenario's required content. CLI profile names select credentials and configuration; they grant no permissions. Case numbers below preserve the supplied document order and may differ from lab identifiers.
 
-- Mechanics were checked against Rhino Security Labs' repository and AWS documentation. The linked video's transcript was unavailable; its Bishop Fox attribution, exact starting policies, profile names (`prevask2`, `prevask3`, etc.), and reported outcomes were not independently verified.
-- The supplied lab summary names `terraform` as an administrative IAM user. That is a lab-specific example; the name itself conveys no permissions. Commands below use `<target-user>` and `<lab-profile>` so the prerequisites remain explicit.
-- The action must be allowed on the relevant resource under applicable policy conditions. `Resource: "*"` is one broad starting configuration, but is not required if the permission covers a specific exploitable target.
-- Adding an administrative allow policy does not override applicable explicit denies, permissions boundaries, session policies, or AWS Organizations service control policies. Outcomes below describe the permissions available when the stated prerequisites are met, not guaranteed unrestricted access. [2]
-- IAM changes can take time to propagate; “instantly” is not a reliable description. [3]
-- Examples are command templates, not executed lab results. Replace angle-bracket placeholders before running them. `admin.json` / `priv.json` represent the supplied lab's policy documents; `func.zip` contains a compatible handler; `lab-user-data.sh` contains the lab's startup code. Local CLI profiles select credentials and configuration; profile names grant no permissions.
+---
 
-## Corrected reference table
+### 1. Create Policy Version
 
-Where user/group/role actions are grouped, they are **alternative variants**, not a requirement to possess all three permissions. The command demonstrates one variant.
+* **Initial Setup (Starting Policy):** Permission to call `iam:CreatePolicyVersion` on a customer-managed policy attached to an identity the actor can use. The supplied lab allows `Resource: "*"`; a specifically allowed target can also be sufficient. There must be room within the five-version limit, or separate permission to delete a nondefault version.
+* **Final Result (After Priv Esc):** A new version containing administrative allow permissions becomes the policy's active default. Its ID might be `v2`, but is determined by IAM.
+* **AWS CLI Command:**
 
-| Privilege Escalation Vector | Required Action(s) | Initial Setup / Prerequisites | Result if Prerequisites Are Met | Example AWS CLI Command | Mechanism / How It Works |
-| --- | --- | --- | --- | --- | --- |
-| **Create Policy Version** | `iam:CreatePolicyVersion` | Allowed on an existing **customer-managed** policy that grants permissions to an identity the actor can use. Fewer than five versions must exist; otherwise an old nondefault version must first be deleted with separate permission. | A broader policy version becomes default and changes permissions for every attached identity. Administrative access is possible, subject to applicable restrictions. | `aws iam create-policy-version --policy-arn <policy-arn> --policy-document file://priv.json --set-as-default --profile <lab-profile>` | The actor supplies a new permissions document. `--set-as-default` is supported by `CreatePolicyVersion` itself; separate `iam:SetDefaultPolicyVersion` permission is unnecessary. AWS-managed policies cannot be edited this way. The returned version ID is not necessarily `v2`. [4] |
-| **Set Default Version** | `iam:SetDefaultPolicyVersion` | Allowed on a customer-managed policy with an existing **nondefault** version containing broader permissions. The policy must grant permissions to an identity the actor can use. | That existing version becomes the operative policy for attached identities. | `aws iam set-default-policy-version --policy-arn <policy-arn> --version-id v2 --profile <lab-profile>` | Switches which saved version is active; it does not create a new permissions document. Use an actual existing version ID, such as lowercase `v2`, rather than `V2`. “Nondefault” replaces “uncommitted.” [4] |
-| **Pass Role + Run EC2** | `iam:PassRole`, `ec2:RunInstances` | Allowed to launch the required EC2 resources and pass the target role in the same AWS account. An existing instance profile contains that role, the role trusts EC2, and the actor can execute code on the instance. Additional launch options can require additional permissions. | Code on the instance can use temporary credentials for the assigned role. | `aws ec2 run-instances --image-id <ami-id> --instance-type t3.micro --iam-instance-profile Name=<instance-profile-name> --user-data file://lab-user-data.sh --profile <lab-profile>` | EC2 receives an **instance profile**, not a bare role name. A compatible AMI can execute user data at startup. The supplied reverse-shell example is one means of code execution; it also requires suitable network reachability. Retrieving role credentials through IMDS depends on metadata configuration; IMDSv2 requires its token flow. Credential export is unnecessary if code directly performs AWS actions using the role. [5][6][15] |
-| **Pass Role + Lambda** | `iam:PassRole`, `lambda:CreateFunction`, `lambda:InvokeFunction` for direct invocation | Allowed to create the function, pass the privileged execution role in the same AWS account, and invoke the function. The role trusts Lambda; the deployment package and handler are valid. | Invoked function code performs actions using the execution role's effective permissions. | Create: `aws lambda create-function --function-name lab-privesc --role <role-arn> --runtime python3.13 --handler index.handler --zip-file fileb://func.zip --profile <lab-profile>`<br>Invoke after the function is active: `aws lambda invoke --function-name lab-privesc --profile <lab-profile> response.json` | Function creation alone does not run the code. Direct invocation or a working trigger must execute it. The CLI example now shows both steps and uses supported `python3.13` instead of deprecated `python3.9`. Existing-trigger variants can have a different permission set. [6][7][8] |
-| **Update Lambda Code** | `lambda:UpdateFunctionCode`; `lambda:InvokeFunction` if invoking directly | Allowed to update an existing function with a privileged execution role. A trigger or direct invocation must execute the changed code. Code-signing enforcement and package compatibility must be satisfied where applicable. | Changed code executes with the function's configured execution role permissions. | `aws lambda update-function-code --function-name <function-name> --zip-file fileb://func.zip --profile <lab-profile>` | Changes the unpublished version (`$LATEST`); published versions are immutable. A trigger targeting an older published version or alias does not automatically execute the changed code. Updating code does not invoke it. Keeping the existing role does not require passing a new role. [1][9] |
-| **Create Access Key** | `iam:CreateAccessKey` | Allowed on a more privileged existing **IAM user** with an available access-key slot; each IAM user is limited to two keys, including inactive keys. | A new active key pair authenticates API requests as the target IAM user, subject to its effective permissions and conditions. | `aws iam create-access-key --user-name <target-user> --profile <lab-profile>` | Creates credentials belonging to the target user. The actor must then use the returned credentials to make requests as that user; the original actor's permissions are not changed. This is IAM-user impersonation, not an STS `AssumeRole` operation. The secret key is returned only at creation. [10][11] |
-| **Create Login Profile** | `iam:CreateLoginProfile` | Allowed on a privileged IAM user that **does not already have a login profile**. The chosen password must satisfy the account password policy. | Creates a console password for that IAM user; successful sign-in still depends on applicable authentication requirements, including configured MFA. | `aws iam create-login-profile --user-name <target-user> --password <new-password> --profile <lab-profile>` | Adds a console authentication method to an existing IAM user. It does not create a new AWS account, add permissions, or remove MFA. The supplied `terraform` example works only if that IAM user exists and lacks a login profile. [12][14] |
-| **Update Login Profile** | `iam:UpdateLoginProfile` | Allowed on a privileged IAM user that **already has a login profile**. The replacement password must satisfy the account password policy. | Changes the target user's console password; it does not itself remove MFA or grant additional permissions. | `aws iam update-login-profile --user-name <target-user> --password <new-password> --profile <lab-profile>` | Replaces an existing IAM-user console password. Using that password can permit impersonation only when the remaining sign-in requirements are met. This does not reset an IAM Identity Center user's password. [13][14] |
-| **Put Inline Policy (User / Group / Role)** | `iam:PutUserPolicy` **or** `iam:PutGroupPolicy` **or** `iam:PutRolePolicy` | Allowed on an entity whose permissions the actor can use: their IAM user, a group containing that user, or a usable role. | The entity receives the supplied inline permissions, subject to applicable restrictions. | Group variant: `aws iam put-group-policy --group-name <group-name> --policy-name test --policy-document file://admin.json --profile <lab-profile>` | Creates or replaces the inline policy with that name. Inline policies are embedded in the entity; they are not attached managed policies. Changing an unrelated entity does not automatically elevate the actor. [1] |
-| **Attach Managed Policy (User / Group / Role)** | `iam:AttachUserPolicy` **or** `iam:AttachGroupPolicy` **or** `iam:AttachRolePolicy` | Allowed to attach the specified policy to a user, group, or role whose permissions the actor can use. Resource restrictions and conditions can constrain the target or policy. | The entity gains permissions from the attached policy, subject to applicable restrictions. | User variant: `aws iam attach-user-policy --user-name <user-name> --policy-arn arn:aws:iam::aws:policy/AdministratorAccess --profile <lab-profile>` | Attaches an existing managed policy. For the role variant, the policy is attached to the underlying **IAM role**, not to an individual STS session. Policy attachment alone does not grant permission to assume an otherwise inaccessible role. [1] |
-| **Add User to Group** | `iam:AddUserToGroup` | Allowed to add an IAM user the actor controls to an existing group with broader permissions. | The IAM user gains permissions granted by the group's policies, subject to applicable restrictions. | `aws iam add-user-to-group --group-name Administrators --user-name <user-name> --profile <lab-profile>` | Changes IAM-user group membership. The group's name does not determine its permissions. IAM groups contain IAM users; an assumed-role session or IAM Identity Center user cannot be added as an IAM-group member. [1][16] |
+```bash
+aws iam create-policy-version --policy-arn <policy-arn> --policy-document file://priv.json --set-as-default --profile prevask1
+```
 
-## Connection to the CloudTrail parser
+* **How It Works:** The actor changes the policy document governing attached identities. `--set-as-default` works with `iam:CreatePolicyVersion` alone; separate `iam:SetDefaultPolicyVersion` permission is unnecessary. This applies to customer-managed policies, not AWS-managed policies or inline policies. [3]
 
-Use these API names as candidate investigation events, not proof of malicious activity. Legitimate administrators and automation also perform them. For each candidate, retain the event time, actor identity, source IP, target parameters, and any error before assessing the resulting permissions or later activity.
+---
 
-**`iam:PassRole` is a permission check, not a standalone API call. There is no separate `PassRole` CloudTrail event.** Inspect the operation receiving the role, such as Lambda `CreateFunction` or EC2 `RunInstances`; EC2 supplies an instance profile whose contained role must be resolved. [6]
+### 2. Set Default Policy Version
 
-An `AssumeRole` event by an AWS service is not, by itself, evidence of this escalation. The useful question is who created or modified the workload and which role they assigned to it. This table is a reference for later parser work; no parser implementation or learning-progress scores were changed.
+* **Initial Setup (Starting Policy):** Permission to call `iam:SetDefaultPolicyVersion` on a customer-managed policy with an existing nondefault version granting broader permissions. The policy must affect an identity the actor can use.
+* **Final Result (After Priv Esc):** An existing **nondefault** administrative version, such as lowercase `v2`, becomes the active default.
+* **AWS CLI Command:**
 
-## Sources
+```bash
+aws iam set-default-policy-version --policy-arn <policy-arn> --version-id v2 --profile prevask2
+```
 
-1. [Rhino Security Labs — AWS IAM Privilege Escalation repository](https://github.com/RhinoSecurityLabs/AWS-IAM-Privilege-Escalation)
-2. [AWS — Policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)
-3. [AWS — IAM eventual consistency](https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot.html#troubleshoot_general_eventual-consistency)
-4. [AWS — Versioning IAM policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-versioning.html) and [CreatePolicyVersion API](https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreatePolicyVersion.html)
-5. [AWS — IAM roles for EC2 applications and instance profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html)
-6. [AWS — PassRole prerequisites and CloudTrail behavior](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html)
-7. [AWS — Lambda execution roles](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html) and [CLI invoke reference](https://docs.aws.amazon.com/cli/latest/reference/lambda/invoke.html)
-8. [AWS — Supported and deprecated Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
-9. [AWS — UpdateFunctionCode API](https://docs.aws.amazon.com/lambda/latest/api/API_UpdateFunctionCode.html)
-10. [AWS — CreateAccessKey API](https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateAccessKey.html)
-11. [AWS — IAM endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/iam-service.html)
-12. [AWS — CreateLoginProfile API](https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateLoginProfile.html)
-13. [AWS — UpdateLoginProfile API](https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateLoginProfile.html)
-14. [AWS — Multi-factor authentication for IAM identities](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html)
+* **How It Works:** The action changes which saved version supplies permissions to attached identities. It does not create a policy document. Replace `v2` with the actual existing version ID; “uncommitted” is not the correct term. [3]
 
-15. [AWS — Instance Metadata Service and IMDSv2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html)
-16. [AWS — IAM user groups](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_groups.html)
+---
 
-Supplied video reference, not independently verified: [YouTube — za_j7QvcsrY](https://www.youtube.com/watch?v=za_j7QvcsrY).
+### 3. Pass Role + Run EC2
+
+* **Initial Setup (Starting Policy):** Permissions for `iam:PassRole` on the target role and `ec2:RunInstances` on the launch resources. An instance profile must contain the same-account role, which must trust EC2. Key-pair creation (`ec2:CreateKeyPair`) is optional, not a prerequisite for user-data execution; some launch options require additional permissions.
+* **Final Result (After Priv Esc):** A compatible instance executes the supplied startup code. The supplied reverse-shell scenario can give access to the instance and its temporary role credentials if networking and metadata access permit.
+* **AWS CLI Command:**
+
+```bash
+aws ec2 run-instances --image-id <ami-id> --instance-type t2.micro --iam-instance-profile Name=<instance-profile-name> --user-data file://shell.sh --profile prevask3
+```
+
+* **How It Works:** EC2 receives an **instance profile**, whose name may differ from the role name. Code running on the instance can use the assigned role's credentials through IMDS; IMDSv2 requires its token flow. A reverse shell also needs a reachable listener and suitable network rules. Code can perform AWS actions locally without exporting credentials. [4][5]
+
+---
+
+### 4. Create Access Key
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:CreateAccessKey` on the higher-privileged IAM user. The supplied lab grants it on `*`; the target must have fewer than two existing access keys, including inactive keys.
+* **Final Result (After Priv Esc):** A new active Access Key ID and Secret Access Key are created for the supplied lab's `terraform` IAM user, assuming that user exists and has broader effective permissions.
+* **AWS CLI Command:**
+
+```bash
+aws iam create-access-key --user-name terraform --profile prevask4
+```
+
+* **How It Works:** The actor must use the returned credentials in subsequent requests to authenticate as `terraform`. Their original user's permissions do not change. This is IAM-user impersonation, not an STS `AssumeRole` operation; the secret is returned only when the key is created. [6]
+
+---
+
+### 5. Create Login Profile
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:CreateLoginProfile` on the target IAM user, which must not already have a login profile. The password must satisfy the account's password policy.
+* **Final Result (After Priv Esc):** A console password is created for the supplied lab's administrative `terraform` IAM user. Console sign-in remains subject to configured MFA and other applicable authentication requirements.
+* **AWS CLI Command:**
+
+```bash
+aws iam create-login-profile --user-name terraform --password <new-pass> --profile prevask5
+```
+
+* **How It Works:** Adds a console authentication method to an existing IAM user; it does not create a new AWS account or add permissions. A user without a login profile need not already have CLI keys. Creating a password does not remove MFA. [7]
+
+---
+
+### 6. Update Login Profile
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:UpdateLoginProfile` on a target IAM user that already has a login profile. The replacement password must meet the account password policy.
+* **Final Result (After Priv Esc):** The existing console password for the supplied lab's `terraform` IAM user is replaced with a known password.
+* **AWS CLI Command:**
+
+```bash
+aws iam update-login-profile --user-name terraform --password <new-pass> --profile prevask6
+```
+
+* **How It Works:** The replacement password can enable impersonation if the remaining sign-in requirements are met. The operation does not remove MFA, modify the user's permissions, or reset an IAM Identity Center user's password. [7]
+
+---
+
+### 7. Put Group Policy
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:PutGroupPolicy` on a group containing an IAM user the actor controls.
+* **Final Result (After Priv Esc):** An inline policy named `test` is created or replaced on that group, adding the administrative allow permissions in `admin.json`.
+* **AWS CLI Command:**
+
+```bash
+aws iam put-group-policy --group-name <group-name> --policy-name test --policy-document file://admin.json --profile prevask11
+```
+
+* **How It Works:** An inline policy is embedded in the group, rather than attached as a managed policy. Group members gain its allowed permissions after propagation, subject to their applicable restrictions. Modifying a group the actor cannot benefit from does not automatically elevate the actor. [1][2][8]
+
+---
+
+### 8. Attach Group Policy (`prevask8`)
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:AttachGroupPolicy` on the target group, with attachment of `AdministratorAccess` allowed. An IAM user controlled by the actor must belong to that group.
+* **Final Result (After Priv Esc):** The AWS-managed `AdministratorAccess` policy is attached to the supplied lab's `prevask-group`.
+* **AWS CLI Command:**
+
+```bash
+aws iam attach-group-policy --group-name prevask-group --policy-arn arn:aws:iam::aws:policy/AdministratorAccess --profile prevask8
+```
+
+* **How It Works:** Group members receive permissions from the existing managed policy. Effective access still depends on applicable boundaries, organization policies, and denies. Group names themselves do not determine privileges. [1][2][8]
+
+---
+
+### 9. Attach Role Policy (`prevask9`)
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:AttachRolePolicy` on a target role, with attachment of `AdministratorAccess` allowed. The actor must already be able to use that role, or have another established path to use it.
+* **Final Result (After Priv Esc):** The managed policy is attached to the underlying IAM role, expanding its allowed permissions.
+* **AWS CLI Command:**
+
+```bash
+aws iam attach-role-policy --role-name <role-name> --policy-arn arn:aws:iam::aws:policy/AdministratorAccess --profile prevask9
+```
+
+* **How It Works:** Attaching a policy changes the role's permissions, not its trust policy. It does not by itself make an otherwise inaccessible role assumable. The attachment is to the IAM role, not an individual STS session. [1][2]
+
+---
+
+### 10. Put User Policy (`prevask10`)
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:PutUserPolicy` on the actor's own IAM user, or another IAM user whose credentials they control.
+* **Final Result (After Priv Esc):** An inline policy named `new-policy` is created or replaced on the supplied lab's `prevask10` IAM user.
+* **AWS CLI Command:**
+
+```bash
+aws iam put-user-policy --user-name prevask10 --policy-name new-policy --policy-document file://admin.json --profile prevask10
+```
+
+* **How It Works:** The actor supplies the permissions document directly on the IAM-user object. Administrative allows can expand access after propagation, subject to applicable restrictions. A CLI profile named `prevask10` does not itself prove that the authenticated IAM user is also named `prevask10`. [1][2]
+
+---
+
+### 11. Put Role Policy & Assume Role (`prevask12`)
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:PutRolePolicy` on the target role and authorization to assume it with `sts:AssumeRole`. The role's trust policy and applicable conditions must allow the actor's assumption.
+* **Final Result (After Priv Esc):** An inline policy grants the role broader permissions; a successful `AssumeRole` request returns temporary role credentials.
+* **AWS CLI Command:**
+
+```bash
+aws iam put-role-policy --role-name <role-name> --policy-name test --policy-document file://admin.json --profile prevask12
+aws sts assume-role --role-arn <role-arn> --role-session-name pwn --profile prevask12
+```
+
+* **How It Works:** The actor changes the role's permission policy, then enters that role's security context. They must use the returned Access Key ID, Secret Access Key, and Session Token for subsequent requests. The command does not automatically switch `prevask12` to the returned credentials. [1][9]
+
+---
+
+### 12. Add User to Group (`prevask13`)
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:AddUserToGroup` for an IAM user the actor controls and an existing group with broader permissions.
+* **Final Result (After Priv Esc):** The supplied lab's `prevask13` IAM user is added to `Administrators`, if that group exists and its policies grant administrative access.
+* **AWS CLI Command:**
+
+```bash
+aws iam add-user-to-group --group-name Administrators --user-name prevask13 --profile prevask13
+```
+
+* **How It Works:** The IAM user receives permissions from the group's policies after propagation, subject to applicable restrictions. IAM groups contain IAM users; an assumed-role session or IAM Identity Center user cannot be added as an IAM-group member. [1][2][8]
+
+---
+
+### 13. Update Assume Role Policy & Assume Role (`prevask14`)
+
+* **Initial Setup (Starting Policy):** Permission to call `iam:UpdateAssumeRolePolicy` on the privileged target role, plus authorization for the subsequent `sts:AssumeRole` request under the resulting trust policy and other applicable policies.
+* **Final Result (After Priv Esc):** The role's trust policy is changed to permit the actor, and successful assumption returns credentials for that role.
+* **AWS CLI Command:**
+
+```bash
+aws iam update-assume-role-policy --role-name <role-name> --policy-document file://trust.json --profile prevask14
+aws sts assume-role --role-arn <role-arn> --role-session-name pwn --profile prevask14
+```
+
+* **How It Works:** `trust.json` changes **who may assume the role**; it does not change what the role may do. A principal such as `arn:aws:iam::<account-id>:root` delegates trust to that AWS account; it does not mean the actor becomes root. Use the returned session credentials to perform actions as the role. [1][9][10]
+
+---
+
+### 14. Pass Role + Create & Invoke Lambda (`prevask15`)
+
+* **Initial Setup (Starting Policy):** Permissions for `iam:PassRole`, `lambda:CreateFunction`, and `lambda:InvokeFunction` on the relevant resources. The same-account execution role must trust Lambda; the package must contain `lambda.py` with a compatible `lambda_handler` function.
+* **Final Result (After Priv Esc):** The function is created and, once active, invoked using the execution role. If its code attaches an administrative policy to the actor, the role must be authorized to make that specific IAM change.
+* **AWS CLI Command:**
+
+```bash
+aws lambda create-function --function-name test --runtime python3.11 --role <role-arn> --handler lambda.lambda_handler --zip-file fileb://func.zip --profile prevask15
+# Invoke after the function becomes Active.
+aws lambda invoke --function-name test output.txt --profile prevask15
+```
+
+* **How It Works:** The caller delegates the execution role to Lambda and runs code under that role. Creation alone does not execute the code. The supplied `python3.11` runtime is supported as of the review date; policy attachment is a payload-specific outcome, not an automatic effect of creating Lambda. [4][11]
+
+---
+
+### 15. Update Lambda Code (`prevask17`)
+
+* **Initial Setup (Starting Policy):** Permission for `lambda:UpdateFunctionCode` on a function using a privileged execution role. `lambda:UpdateFunctionConfiguration` is needed only if the attack also changes configuration, such as the handler. Direct invocation additionally needs `lambda:InvokeFunction`; otherwise a working trigger must run the changed version.
+* **Final Result (After Priv Esc):** The unpublished function code is replaced. When that code executes, it runs under the function's configured execution role.
+* **AWS CLI Command:**
+
+```bash
+aws lambda update-function-code --function-name <func-name> --zip-file fileb://lambda.zip --profile prevask17
+```
+
+* **How It Works:** Updating code does not invoke it. Published versions are immutable; a trigger or alias targeting an older published version will not automatically run changed `$LATEST` code. The package must fit the existing runtime, handler, and architecture, and satisfy code-signing enforcement where enabled. Keeping the existing execution role does not require passing a new role. [1][12]
+
+---
+
+### 16. CloudFormation Stack Creation (`prevask20`)
+
+* **Initial Setup (Starting Policy):** Permissions for `iam:PassRole` on the same-account service role and `cloudformation:CreateStack`; `cloudformation:DescribeStacks` allows reading status and outputs. The role must trust CloudFormation and have permissions for the resources and IAM changes defined in the template.
+* **Final Result (After Priv Esc):** CloudFormation provisions resources using that service role. Administrative credentials appear in stack outputs only if the template explicitly creates an appropriately privileged IAM user/access key and exposes the key values in its outputs.
+* **AWS CLI Command:**
+
+```bash
+aws cloudformation create-stack --stack-name pwn --template-url <template-url> --role-arn <role-arn> --capabilities CAPABILITY_NAMED_IAM --profile prevask20
+# Read outputs after stack creation succeeds.
+aws cloudformation describe-stacks --stack-name pwn --profile prevask20
+```
+
+* **How It Works:** The actor controls a declarative template that CloudFormation processes with the passed role's permissions. The credential outcome is template-specific, not automatic. `CAPABILITY_NAMED_IAM` acknowledges named IAM resources and also covers unnamed IAM resources; `CAPABILITY_IAM` is sufficient when no IAM resources have custom names. These flags acknowledge the template's capabilities; they do not grant IAM permissions. [13]
+
+---
+
+### 17. EC2 Instance Connect (`prevask21`)
+
+* **Initial Setup (Starting Policy):** Permission for `ec2-instance-connect:SendSSHPublicKey` on a target instance for the permitted OS user. `ec2:DescribeInstances` helps discover the instance but is not intrinsic to sending a key when its details are known. The instance needs working EC2 Instance Connect integration, a valid OS user, and reachable SSH. For AWS privilege escalation, an accessible instance role must offer broader permissions.
+* **Final Result (After Priv Esc):** The actor's public key is made available for SSH authentication for 60 seconds. A successful SSH login can provide access to the instance and, if available to that OS user, its role credentials.
+* **AWS CLI Command:**
+
+```bash
+aws ec2-instance-connect send-ssh-public-key --instance-id <instance-id> --availability-zone <az> --instance-os-user <os-user> --ssh-public-key file://<public-key-path> --profile prevask21
+# Start SSH within the public key's 60-second availability window.
+ssh -i <private-key-path> <os-user>@<reachable-instance-address>
+```
+
+* **How It Works:** The API temporarily publishes a public key; it does not establish the SSH session or permanently edit `authorized_keys`. The matching private key is used by the SSH client, and OS-user and network restrictions still apply. Metadata credential access depends on the instance's configuration, including IMDSv2. Host access alone is not proof of increased AWS permissions. [5][14]
+
+---
+
+### CloudTrail Note
+
+`iam:PassRole` is a permission check, not an API call, so there is no separate `PassRole` CloudTrail event. Inspect the receiving operation, such as `RunInstances`, `CreateFunction`, or `CreateStack`, and resolve the assigned role or instance profile. Legitimate administrators and automation also perform these actions; the event name alone is not proof of malicious activity. [4]
+
+### Sources
+
+1. [Rhino Security Labs — AWS IAM Privilege Escalation](https://github.com/RhinoSecurityLabs/AWS-IAM-Privilege-Escalation).
+2. AWS: [Policy evaluation](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html) and [IAM eventual consistency](https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot.html#troubleshoot_general_eventual-consistency).
+3. AWS: [Policy versioning](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-versioning.html) and [CreatePolicyVersion API](https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreatePolicyVersion.html).
+4. AWS: [Passing roles to services, including CloudTrail behavior](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html).
+5. AWS: [EC2 roles and instance profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html) and [IMDSv2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html).
+6. AWS: [CreateAccessKey API](https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateAccessKey.html) and [IAM quotas](https://docs.aws.amazon.com/general/latest/gr/iam-service.html).
+7. AWS: [CreateLoginProfile API](https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateLoginProfile.html), [UpdateLoginProfile API](https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateLoginProfile.html), and [IAM MFA](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html).
+8. AWS: [IAM user groups](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_groups.html).
+9. AWS: [Role principals and role-session credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html#principal-role).
+10. AWS: [Account principals and account-root ARN semantics](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html#principal-accounts).
+11. AWS: [Lambda execution roles](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html), [supported runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html), and [CLI invoke](https://docs.aws.amazon.com/cli/latest/reference/lambda/invoke.html).
+12. AWS: [UpdateFunctionCode API](https://docs.aws.amazon.com/lambda/latest/api/API_UpdateFunctionCode.html).
+13. AWS: [CloudFormation service roles](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-iam-servicerole.html), [CreateStack API and capability flags](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html), and [IAM access-key resource attributes](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-accesskey.html).
+14. AWS: [EC2 Instance Connect prerequisites](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-prerequisites.html), [connection methods](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-methods.html), and [SendSSHPublicKey API](https://docs.aws.amazon.com/ec2-instance-connect/latest/APIReference/API_SendSSHPublicKey.html).
