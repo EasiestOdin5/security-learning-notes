@@ -79,8 +79,8 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 **Score changes:** None. Preserve original baselines and current score until combined code and reproducible tests are reviewed.
 
-**Source status:** The latest two-detector Python script is **local only** as of this entry. The committed [October 14 parser](2026-10-14-cloudtrail_parser.py) is the earlier Lab 1 version. Do not mislabel it as Lab 2 code.
+**Source status:** The user-provided two-detector script is now committed as [2026-10-14-cloudtrail_parser-lab2.py](2026-10-14-cloudtrail_parser-lab2.py), preserving [2026-10-14-cloudtrail_parser.py](2026-10-14-cloudtrail_parser.py) as the separate Lab 1 checkpoint. The user reports successful local tests; no independently executed test suite has been recorded.
 
 ## Next session
 
-Receive and review the current two-detector script, then commit it as a new dated/versioned checkpoint without losing the Lab 1 version. Continue to the next privilege-escalation case; defer advanced false-positive tuning and historical policy-diff analysis. Keep real AWS event data out of the public repo.
+The two-detector code has been committed as a separate checkpoint. Continue to the next privilege-escalation case; defer advanced false-positive tuning and historical policy-diff analysis. Keep real AWS event data out of the public repo.
