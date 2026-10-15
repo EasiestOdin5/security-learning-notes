@@ -40,7 +40,7 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 | Validate top-level structure and Records entries | Code written; reviewed | Repeatable tests cover all expected cases |
 | Data-driven validation tests | Basic function written; reviewed | Run test cases and record pass/fail |
 | Index events by IAM username | Not started as integrated code | Independent implementation and verified grouping |
-| Search/report investigation findings | Three basic IAM rules user-tested locally; three-rule source checkpoint committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
+| Search/report investigation findings | Four basic IAM rules user-tested locally; three-rule source checkpoint committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
 | End-to-end CLI and safe error reporting | CLI file input and detection report locally tested; negative error paths not fully verified | Exit codes, malformed input behavior, repeatable runs |
 | Handle assumed roles, duplicates, large files | Future | Explicit requirements and measured verification |
 
@@ -95,6 +95,20 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 **Source status:** The user-provided three-detector CLI source is now committed as [2026-10-15-cloudtrail_parser-lab4.py](2026-10-15-cloudtrail_parser-lab4.py), preserving the earlier Lab 1 and Lab 2 checkpoints. The reported local detections are recorded, but automated regression tests have not been independently executed here.
 
+## Evidence — October 15, 2026: CreateLoginProfile privilege-escalation lab (case 5)
+
+**Lab write-up:** [2026-10-15-create-login-profile-lab.md](2026-10-15-create-login-profile-lab.md).
+
+**Hands-on IAM evidence:** Used AWS CLI reference documentation to distinguish `CreateLoginProfile` from password updates. Prepared a CLI JSON skeleton, discovered and fixed a UTF-16/UTF-8 encoding mismatch, then successfully invoked `CreateLoginProfile` as `lab-attacker` for `lab-privileged`. Confirmed IAM-user AWS Console login using the newly created password; the observed login did not require an MFA challenge. A console login profile adds an authentication method, not new IAM permissions.
+
+**Tool evidence:** Added locally a basic successful-`CreateLoginProfile` detector using the existing result dictionary and report structure. User reported completion of positive and negative tests; specific event fixture contents and output were not provided for independent verification. Full `CreateLoginProfile` and `ConsoleLogin` CloudTrail event correlation has **not** yet been demonstrated.
+
+**Learning approach:** The user drove implementation from AWS documentation instead of receiving full commands in advance. Avoided extra detection engineering due to diminishing value; the observed Windows file encoding issue provided useful CLI troubleshooting practice.
+
+**Score changes:** None. Preserve the baseline and existing current ratings until independent code review and reproducible tests support reassessment.
+
+**Source status:** The last committed source is [2026-10-15-cloudtrail_parser-lab4.py](2026-10-15-cloudtrail_parser-lab4.py) (three detectors). The complete locally tested Lab 5 script was not supplied or pushed and must not be described as committed.
+
 ## Next session
 
-Request and review the current full local Lab 4 Python script, commit a new dated checkpoint, and confirm CLI and detection behavior. Then continue to the next chosen IAM escalation case; avoid additional detection tuning unless the lab requires it. Clean up the extra test access key and unnecessary privilege-escalation permissions after evidence collection. Do not publish raw CloudTrail or secret material.
+Choose whether to inspect the two CloudTrail API/sign-in events before closing the Lab 5 investigation. Receive the current four-detector script and commit it as a separate dated checkpoint. Continue selective IAM privilege-escalation labs only when introducing meaningfully different architecture or attack mechanisms. Clean up the exposed test password/login profile and unnecessary lab IAM permissions; never commit credentials or raw CloudTrail event histories.
