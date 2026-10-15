@@ -40,7 +40,7 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 | Validate top-level structure and Records entries | Code written; reviewed | Repeatable tests cover all expected cases |
 | Data-driven validation tests | Basic function written; reviewed | Run test cases and record pass/fail |
 | Index events by IAM username | Not started as integrated code | Independent implementation and verified grouping |
-| Search/report investigation findings | Locally implemented and tested for one rule | Reproduce full rule+report workflow with committed code and sanitized fixtures |
+| Search/report investigation findings | Two rules locally implemented and user-tested; first version committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
 | End-to-end CLI and safe error reporting | CLI file input and detection report locally tested; negative error paths not fully verified | Exit codes, malformed input behavior, repeatable runs |
 | Handle assumed roles, duplicates, large files | Future | Explicit requirements and measured verification |
 
@@ -65,8 +65,22 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 **Score changes:** None. This lab is concrete progress, but scores remain unchanged until the current local implementation is reviewed and reproducibly tested. Preserve the initial/current/goal matrix.
 
-**Source artifact:** [2026-10-11-cloudtrail_parser.py](2026-10-11-cloudtrail_parser.py) is the *older October 11 checkpoint*, date-prefixed for clarity. It does **not** contain the locally tested October 14 detector/report. Await the latest local script before committing a date-prefixed October 14 source file.
+**Source artifacts:** [2026-10-11-cloudtrail_parser.py](2026-10-11-cloudtrail_parser.py) preserves the initial loader/validator checkpoint. [2026-10-14-cloudtrail_parser.py](2026-10-14-cloudtrail_parser.py) is the user-provided and committed **Lab 1** detector/report. It does not yet contain the two-rule Lab 2 refactor.
+
+## Evidence — October 14, 2026: SetDefaultPolicyVersion privilege-escalation lab
+
+**Lab write-up:** [2026-10-14-set-default-policy-version-lab.md](2026-10-14-set-default-policy-version-lab.md).
+
+**Hands-on security evidence:** Created a v3 default of the attached customer-managed lab policy that allowed `iam:SetDefaultPolicyVersion`; v2 remained inactive with `iam:ListUsers`. Switched default from v3 to v2 using attacker credentials, then successfully invoked `ListUsers`. Located the CloudTrail `SetDefaultPolicyVersion` event and its requested v2 target. The event does not record the previous default version.
+
+**Tool-engineering evidence (locally tested):** Added a successful-API-call `SetDefaultPolicyVersion` rule, unified detector results into a dictionary containing `rule`, `severity`, `reason`, and `alerts`, generalized the reporter to consume this interface, and adopted a list of detector functions as a simple registry. Latest CloudTrail JSON generated the expected detections; an older JSON predating the operation generated no matching Lab 2 detections. Failed-API negative testing remains unverified.
+
+**Assessment:** Faster scenario design and implementation than Lab 1, with reusable architecture rather than repetitive code. User independently raised key design concerns; implementation remained guided. This evidence supports a qualitative improvement in modularity and tool-design reasoning, but doesn't alone justify a defensible numerical score change.
+
+**Score changes:** None. Preserve original baselines and current score until combined code and reproducible tests are reviewed.
+
+**Source status:** The latest two-detector Python script is **local only** as of this entry. The committed [October 14 parser](2026-10-14-cloudtrail_parser.py) is the earlier Lab 1 version. Do not mislabel it as Lab 2 code.
 
 ## Next session
 
-Upload and review the current locally tested parser/detector, commit it as `2026-10-14-cloudtrail_parser.py`, and verify it on sanitized test fixtures; then start the separate `SetDefaultPolicyVersion` technique. Keep older checkpoints and real AWS event data separate.
+Receive and review the current two-detector script, then commit it as a new dated/versioned checkpoint without losing the Lab 1 version. Continue to the next privilege-escalation case; defer advanced false-positive tuning and historical policy-diff analysis. Keep real AWS event data out of the public repo.
