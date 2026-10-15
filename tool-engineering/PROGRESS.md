@@ -1,7 +1,7 @@
 # Tool Engineering Progress
 
 **Baseline date:** 2026-10-11  
-**Last updated:** 2026-10-14  
+**Last updated:** 2026-10-15  
 **Scope:** Python implementation and security-tool engineering, tracked separately from the root security-skills matrix.
 
 ## Baseline / Current / Goal
@@ -40,7 +40,7 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 | Validate top-level structure and Records entries | Code written; reviewed | Repeatable tests cover all expected cases |
 | Data-driven validation tests | Basic function written; reviewed | Run test cases and record pass/fail |
 | Index events by IAM username | Not started as integrated code | Independent implementation and verified grouping |
-| Search/report investigation findings | Two rules locally implemented and user-tested; first version committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
+| Search/report investigation findings | Three basic IAM rules user-tested locally; two-rule source checkpoint committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
 | End-to-end CLI and safe error reporting | CLI file input and detection report locally tested; negative error paths not fully verified | Exit codes, malformed input behavior, repeatable runs |
 | Handle assumed roles, duplicates, large files | Future | Explicit requirements and measured verification |
 
@@ -81,6 +81,20 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 **Source status:** The user-provided two-detector script is now committed as [2026-10-14-cloudtrail_parser-lab2.py](2026-10-14-cloudtrail_parser-lab2.py), preserving [2026-10-14-cloudtrail_parser.py](2026-10-14-cloudtrail_parser.py) as the separate Lab 1 checkpoint. The user reports successful local tests; no independently executed test suite has been recorded.
 
+## Evidence — October 15, 2026: CreateAccessKey privilege-escalation lab (case 4)
+
+**Lab write-up:** [2026-10-15-create-access-key-lab.md](2026-10-15-create-access-key-lab.md). Case 3 intentionally deferred because it requires several APIs.
+
+**Security evidence:** Granted `lab-attacker` `iam:CreateAccessKey` against another IAM user; created a new access key for `lab-privileged`; authenticated through a separate `lab-privileged-compromised` CLI profile and successfully ran `ListUsers`. The original `lab-attacker` credentials received `AccessDenied` for the same operation. In CloudTrail, verified the newly generated key ID in `CreateAccessKey.responseElements.accessKey.accessKeyId` matched the calling `userIdentity.accessKeyId` in subsequent `ListUsers` activity under `lab-privileged`. Two keys for the same target IAM user were distinguished using access key IDs.
+
+**Tool-engineering evidence:** A simple successful-`CreateAccessKey` detector was tested against recent CloudTrail data; user reported two hits: one legitimate lab setup by `lab-admin` and one attacker-initiated key creation by `lab-attacker`. The distinction illustrated expected false positives from a basic API-based rule. Proposed `--detect` and `--event` CLI controls and a complete implementation example; the user's confirmation of that exact CLI revision is pending. No failed-API negative test or integrated automated key-use correlation has been demonstrated.
+
+**Engineering assessment:** Continued reuse of the detector/report architecture; good understanding of caller versus generated credentials and the value of correlating access key identifiers. This remains a guided build with a basic rule, not a high-confidence compromise detector.
+
+**Score changes:** None. Initial/current/goal ratings remain fixed pending independent reproducible code and test review.
+
+**Source status:** Existing [2026-10-14-cloudtrail_parser-lab2.py](2026-10-14-cloudtrail_parser-lab2.py) is the most recent committed source checkpoint. The locally tested Lab 4 detector and CLI changes have not yet been supplied as a single verified source artifact.
+
 ## Next session
 
-The two-detector code has been committed as a separate checkpoint. Continue to the next privilege-escalation case; defer advanced false-positive tuning and historical policy-diff analysis. Keep real AWS event data out of the public repo.
+Request and review the current full local Lab 4 Python script, commit a new dated checkpoint, and confirm CLI and detection behavior. Then continue to the next chosen IAM escalation case; avoid additional detection tuning unless the lab requires it. Clean up the extra test access key and unnecessary privilege-escalation permissions after evidence collection. Do not publish raw CloudTrail or secret material.
