@@ -40,7 +40,7 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 | Validate top-level structure and Records entries | Code written; reviewed | Repeatable tests cover all expected cases |
 | Data-driven validation tests | Basic function written; reviewed | Run test cases and record pass/fail |
 | Index events by IAM username | Not started as integrated code | Independent implementation and verified grouping |
-| Search/report investigation findings | Four basic IAM rules user-tested locally; three-rule source checkpoint committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
+| Search/report investigation findings | Four basic IAM rules user-tested locally; four-rule source checkpoint committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
 | End-to-end CLI and safe error reporting | CLI file input and detection report locally tested; negative error paths not fully verified | Exit codes, malformed input behavior, repeatable runs |
 | Handle assumed roles, duplicates, large files | Future | Explicit requirements and measured verification |
 
@@ -107,8 +107,8 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 **Score changes:** None. Preserve the baseline and existing current ratings until independent code review and reproducible tests support reassessment.
 
-**Source status:** The last committed source is [2026-10-15-cloudtrail_parser-lab4.py](2026-10-15-cloudtrail_parser-lab4.py) (three detectors). The complete locally tested Lab 5 script was not supplied or pushed and must not be described as committed.
+**Source status:** The user-provided Lab 5 script has now been committed as [2026-10-15-cloudtrail_parser-lab5.py](2026-10-15-cloudtrail_parser-lab5.py), preserving the three-detector Lab 4 checkpoint. The user reported positive and negative detection tests, but no independent regression suite was run.
 
 ## Next session
 
-Choose whether to inspect the two CloudTrail API/sign-in events before closing the Lab 5 investigation. Receive the current four-detector script and commit it as a separate dated checkpoint. Continue selective IAM privilege-escalation labs only when introducing meaningfully different architecture or attack mechanisms. Clean up the exposed test password/login profile and unnecessary lab IAM permissions; never commit credentials or raw CloudTrail event histories.
+Choose whether to inspect the `CreateLoginProfile` and `ConsoleLogin` events before closing the Lab 5 investigation. The four-detector code is now committed as a dated checkpoint. Continue selective IAM privilege-escalation labs only when introducing meaningfully different architecture or attack mechanisms. Clean up the exposed test password/login profile and unnecessary lab IAM permissions; never commit credentials or raw CloudTrail event histories.
