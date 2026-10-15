@@ -40,7 +40,7 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 | Validate top-level structure and Records entries | Code written; reviewed | Repeatable tests cover all expected cases |
 | Data-driven validation tests | Basic function written; reviewed | Run test cases and record pass/fail |
 | Index events by IAM username | Not started as integrated code | Independent implementation and verified grouping |
-| Search/report investigation findings | Three basic IAM rules user-tested locally; two-rule source checkpoint committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
+| Search/report investigation findings | Three basic IAM rules user-tested locally; three-rule source checkpoint committed | Reproduce full rule+report workflow with committed code and sanitized fixtures |
 | End-to-end CLI and safe error reporting | CLI file input and detection report locally tested; negative error paths not fully verified | Exit codes, malformed input behavior, repeatable runs |
 | Handle assumed roles, duplicates, large files | Future | Explicit requirements and measured verification |
 
@@ -93,7 +93,7 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 **Score changes:** None. Initial/current/goal ratings remain fixed pending independent reproducible code and test review.
 
-**Source status:** Existing [2026-10-14-cloudtrail_parser-lab2.py](2026-10-14-cloudtrail_parser-lab2.py) is the most recent committed source checkpoint. The locally tested Lab 4 detector and CLI changes have not yet been supplied as a single verified source artifact.
+**Source status:** The user-provided three-detector CLI source is now committed as [2026-10-15-cloudtrail_parser-lab4.py](2026-10-15-cloudtrail_parser-lab4.py), preserving the earlier Lab 1 and Lab 2 checkpoints. The reported local detections are recorded, but automated regression tests have not been independently executed here.
 
 ## Next session
 
