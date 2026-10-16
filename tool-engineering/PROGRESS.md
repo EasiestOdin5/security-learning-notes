@@ -101,7 +101,7 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 **Hands-on IAM evidence:** Used AWS CLI reference documentation to distinguish `CreateLoginProfile` from password updates. Prepared a CLI JSON skeleton, discovered and fixed a UTF-16/UTF-8 encoding mismatch, then successfully invoked `CreateLoginProfile` as `lab-attacker` for `lab-privileged`. Confirmed IAM-user AWS Console login using the newly created password; the observed login did not require an MFA challenge. A console login profile adds an authentication method, not new IAM permissions.
 
-**Tool evidence:** Added locally a basic successful-`CreateLoginProfile` detector using the existing result dictionary and report structure. User reported completion of positive and negative tests; specific event fixture contents and output were not provided for independent verification. Full `CreateLoginProfile` and `ConsoleLogin` CloudTrail event correlation has **not** yet been demonstrated.
+**Tool evidence:** Added locally a basic successful-`CreateLoginProfile` detector using the existing result dictionary and report structure. User reported completion of positive and negative tests; specific event fixture contents and output were not provided for independent verification. The user subsequently located and examined `CreateLoginProfile` and `ConsoleLogin` in different Regions (`ConsoleLogin` in `us-east-2`), completing the manual event sequence; automatic correlation has not been implemented.
 
 **Learning approach:** The user drove implementation from AWS documentation instead of receiving full commands in advance. Avoided extra detection engineering due to diminishing value; the observed Windows file encoding issue provided useful CLI troubleshooting practice.
 
@@ -111,4 +111,4 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 ## Next session
 
-Choose whether to inspect the `CreateLoginProfile` and `ConsoleLogin` events before closing the Lab 5 investigation. The four-detector code is now committed as a dated checkpoint. Continue selective IAM privilege-escalation labs only when introducing meaningfully different architecture or attack mechanisms. Clean up the exposed test password/login profile and unnecessary lab IAM permissions; never commit credentials or raw CloudTrail event histories.
+The Lab 5 manual CloudTrail investigation is complete. Case 7 `PutGroupPolicy` was reproduced and examined in CloudTrail; Case 6 `UpdateLoginProfile` and Case 8 `AttachGroupPolicy` were deliberately skipped after conceptual review. Document cleanup state when confirmed. The four-detector code is now committed as a dated checkpoint. Continue selective IAM privilege-escalation labs only when introducing meaningfully different architecture or attack mechanisms. Clean up the exposed test password/login profile and unnecessary lab IAM permissions; never commit credentials or raw CloudTrail event histories.
