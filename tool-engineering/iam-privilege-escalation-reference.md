@@ -292,6 +292,7 @@ ssh -i <private-key-path> <os-user>@<reachable-instance-address>
 | 6 | UpdateLoginProfile | Concept understood; lab skipped | No | Skipped |
 | 7 | PutGroupPolicy | Hands-on completed | Yes: denied/mutation/successful API | Skipped deliberately |
 | 8 | AttachGroupPolicy | Concept understood; lab skipped | No | Skipped |
+| 9 | AttachRolePolicy | Hands-on completed | Yes: AssumeRole → temporary credential → ListUsers; original user denied | Skipped deliberately |
 
 ### Case 1 — CreatePolicyVersion
 
@@ -444,4 +445,46 @@ aws iam attach-group-policy --group-name Developers --policy-arn arn:aws:iam::aw
 
 **Expected result:** The existing AWS-managed `AdministratorAccess` policy becomes attached to `Developers`; group members can receive those permissions subject to restrictions. This differs from inline `PutGroupPolicy` (supplies a policy JSON document). **Checklist:** [x] Concept understood [x] Compared to Case 7 [ ] Hands-on [ ] CloudTrail [ ] Detector. **Skipped intentionally due to overlap.**
 
-**Next:** Case 9 `AttachRolePolicy` has been discussed but **not started**. Separate tooling idea: all-Region CloudTrail collection via boto3; do not count it as a privilege-escalation case.
+### Case 9 — AttachRolePolicy + AssumeRole
+
+**Before:** IAM user `lab-attacker` could not call `iam:ListUsers`. The lab role `LabAttackerSupportRole` was created without attached permission policies. Its initial trust policy selected **AWS account → This account**, represented by the account-root principal; this delegates trust to permitted principals in the account, rather than restricting assumption to the literal root user:
+
+```json
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::220147487340:root"},"Action":"sts:AssumeRole","Condition":{}}]}
+```
+
+The user confirmed that `lab-attacker` had both `iam:AttachRolePolicy` and `sts:AssumeRole` access to the role. **Representative, reconstructed** user-side permission policy (actual deployed JSON and exact resource scope were not archived):
+
+```json
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["iam:AttachRolePolicy","sts:AssumeRole"],"Resource":"arn:aws:iam::220147487340:role/LabAttackerSupportRole"}]}
+```
+
+**Executed commands:**
+
+```powershell
+aws iam attach-role-policy --role-name LabAttackerSupportRole --policy-arn arn:aws:iam::aws:policy/IAMReadOnlyAccess --profile lab-attacker
+aws sts assume-role --role-arn arn:aws:iam::220147487340:role/LabAttackerSupportRole --role-session-name Lab9Session --profile lab-attacker
+# STS returned AccessKeyId, SecretAccessKey, and SessionToken.
+# Those temporary credentials were configured locally as AWS CLI profile lab9-assumed.
+aws iam list-users --profile lab9-assumed
+aws iam list-users --profile lab-attacker
+```
+
+**After:** Attaching AWS-managed `IAMReadOnlyAccess` expanded the **role's** effective permissions, including `iam:ListUsers`; it did not change `lab-attacker`'s permissions or the role trust policy. Assuming the role produced temporary STS credentials and `ListUsers` succeeded using those credentials. The original IAM user continued receiving `AccessDenied`. `lab9-assumed` was a **local CLI profile name**, not an AWS identity or value recorded in CloudTrail. An initial `ListUsers` denial **under the role before the policy attachment** was not tested; the initial role had no attached permissions.
+
+**Verified CloudTrail timeline (2026-10-16, UTC):**
+
+| Time | API / identity | Result or evidence |
+|---|---|---|
+| 18:30:45 | `ListUsers` — `arn:aws:iam::220147487340:user/lab-attacker` | `AccessDenied` |
+| 18:35:39 | `AssumeRole` — same IAM user | `requestParameters.roleArn` = `arn:aws:iam::220147487340:role/LabAttackerSupportRole` |
+| 18:37:36 | `ListUsers` — `arn:aws:sts::220147487340:assumed-role/LabAttackerSupportRole/Lab9Session` | Success; `userIdentity.accessKeyId` matched the temporary key returned by the `AssumeRole` event |
+| 18:37:52 | `ListUsers` — original `lab-attacker` | `AccessDenied` |
+
+The user **verified the temporary-key match** between `AssumeRole.responseElements.credentials.accessKeyId` and the successful `ListUsers.userIdentity.accessKeyId`. The `AssumeRole.userIdentity.accessKeyId` is instead the original user's key. This links the original principal → STS assumption → successful role-session action. The `AttachRolePolicy` CLI operation succeeded and the managed policy attachment was confirmed in the AWS Console; **its own CloudTrail event was not separately confirmed in the recorded investigation**.
+
+**Engineering observation:** The generic parser's `--event AssumeRole` output included many repetitive service-role events and omitted useful role-specific fields. Filtering `requestParameters.roleArn` to `LabAttackerSupportRole` located this event. This is a search/display improvement, **not** a reason to add a simplistic single-event detection.
+
+**Checklist:** [x] Scenario [x] Successful role-policy attachment [x] AssumeRole + STS temporary credentials [x] Successful role-session API [x] Original user still denied [x] CloudTrail AssumeRole and ListUsers correlation [x] Temporary access-key match [ ] CloudTrail AttachRolePolicy separately inspected [ ] Initial role-session denial before attachment [ ] Detector (deliberately skipped).
+
+**Next:** Case 10 `PutUserPolicy` (concept-only or hands-on decision pending). Separate tooling idea: all-Region CloudTrail collection via boto3; do not count it as a privilege-escalation case.
