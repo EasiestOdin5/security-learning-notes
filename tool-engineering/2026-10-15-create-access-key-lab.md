@@ -2,7 +2,7 @@
 
 **Date documented:** 2026-10-15  
 **Status:** Attack reproduced; CloudTrail credential correlation confirmed; basic detector locally tested; latest code not committed  
-**Reference:** [IAM privilege-escalation reference — case 4](2026-10-14-iam-privilege-escalation-reference.md)
+**Reference:** [IAM privilege-escalation reference — case 4](iam-privilege-escalation-reference.md)
 
 ## Scope and objective
 
