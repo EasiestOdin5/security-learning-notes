@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-14  
 **Status:** Lab reproduced; CloudTrail inspected; basic detector locally tested; current code not yet synchronized to GitHub  
-**Reference:** [IAM privilege-escalation reference, case 2](2026-10-14-iam-privilege-escalation-reference.md)
+**Reference:** [IAM privilege-escalation reference, case 2](iam-privilege-escalation-reference.md)
 
 ## Goal
 
