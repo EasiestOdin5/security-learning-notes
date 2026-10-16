@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-14  
 **Status:** Completed (manual reproduction, CloudTrail analysis, basic local detector and tests)  
-**Reference:** [AWS IAM privilege-escalation case-by-case walkthrough](2026-10-14-iam-privilege-escalation-reference.md), case 1
+**Reference:** [AWS IAM privilege-escalation case-by-case walkthrough](iam-privilege-escalation-reference.md), case 1
 
 ## Objective
 
