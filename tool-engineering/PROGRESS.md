@@ -109,6 +109,16 @@ See [detailed checkpoint](2026-10-11-python-cloudtrail-checkpoint.md).
 
 **Source status:** The user-provided Lab 5 script has now been committed as [2026-10-15-cloudtrail_parser-lab5.py](2026-10-15-cloudtrail_parser-lab5.py), preserving the three-detector Lab 4 checkpoint. The user reported positive and negative detection tests, but no independent regression suite was run.
 
+## Evidence — October 16, 2026: PutGroupPolicy privilege escalation (case 7)
+
+**Reference and scenario:** [Living IAM escalation reference — case 7](iam-privilege-escalation-reference.md#case-7--putgrouppolicy). User created a `Developers` group without permissions, added `lab-attacker`, and granted the attacker `iam:PutGroupPolicy` through its own user policy. The attacker could not initially call `ListUsers`.
+
+**Execution and verification:** Executed `aws iam put-group-policy --group-name Developers --policy-name ListUsers --policy-document file://listusers.json --profile lab-attacker`. After the inline group policy was created, the same attacker successfully called `ListUsers`. The policy was visible in the AWS Console. Manually investigated CloudTrail for denied `ListUsers`, the `PutGroupPolicy` actor/target/policy document, and successful `ListUsers`, with the same attacker identity.
+
+**Engineering scope:** No new detector was requested or added. Inline-versus-managed group policies were understood; case 8 (`AttachGroupPolicy`) and case 6 (`UpdateLoginProfile`) were intentionally skipped due to overlapping concepts. Case 9 (`AttachRolePolicy`) deferred.
+
+**Score changes:** None. Exact original IAM JSON files were not provided, so the living reference uses clearly labeled minimal reproductions of the confirmed permissions.
+
 ## Next session
 
 The Lab 5 manual CloudTrail investigation is complete. Case 7 `PutGroupPolicy` was reproduced and examined in CloudTrail; Case 6 `UpdateLoginProfile` and Case 8 `AttachGroupPolicy` were deliberately skipped after conceptual review. Document cleanup state when confirmed. The four-detector code is now committed as a dated checkpoint. Continue selective IAM privilege-escalation labs only when introducing meaningfully different architecture or attack mechanisms. Clean up the exposed test password/login profile and unnecessary lab IAM permissions; never commit credentials or raw CloudTrail event histories.
