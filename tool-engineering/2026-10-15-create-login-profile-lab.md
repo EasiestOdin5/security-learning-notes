@@ -1,8 +1,8 @@
 # IAM Privilege Escalation Lab 05 — CreateLoginProfile
 
 **Date:** 2026-10-15  
-**Status:** API mechanism reproduced, AWS Console login confirmed, basic detector tested locally; detailed CloudTrail comparison pending  
-**Reference:** [IAM privilege-escalation reference — case 5](2026-10-14-iam-privilege-escalation-reference.md)
+**Status:** API mechanism reproduced, AWS Console login confirmed, CloudTrail creation/login events investigated, basic detector tested locally  
+**Reference:** [IAM privilege-escalation reference — case 5](iam-privilege-escalation-reference.md)
 
 ## Objective
 
@@ -52,7 +52,7 @@ Registered the function in the existing detector list, according to the user-rep
 
 ## CloudTrail investigation status
 
-Inspecting and correlating `CreateLoginProfile` with `ConsoleLogin` was recommended, but the conversation does **not** document a completed event-by-event comparison. Do not label this forensic step as completed.
+The user subsequently found `CreateLoginProfile` showing `lab-attacker` targeting `lab-privileged`, then found the matching target user's `ConsoleLogin` in CloudTrail Event history in **us-east-2** after initially searching other Regions. The user also confirmed the console identity. This completes manual examination of the two relevant event types, but their correlation is not automated and the original newly created password cannot be conclusively identified from these events alone.
 
 ## Learning outcome and deliberate scope
 
@@ -65,5 +65,5 @@ Inspecting and correlating `CreateLoginProfile` with `ConsoleLogin` was recommen
 ## Next actions
 
 1. Optionally inspect `CreateLoginProfile` and `ConsoleLogin` events if completing the CloudTrail investigative checkpoint is desired.
-2. Obtain the user's current four-detector Python source before committing the exact Lab 5 code; do not reconstruct it as if it were a verified user-uploaded artifact.
+2. The user's four-detector Python source is committed as [2026-10-15-cloudtrail_parser-lab5.py](2026-10-15-cloudtrail_parser-lab5.py).
 3. Clean up test login profile/password and unnecessary IAM permissions after retaining evidence; avoid committing real passwords, credentials, or raw CloudTrail data.
