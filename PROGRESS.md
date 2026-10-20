@@ -594,3 +594,26 @@ The next strongest roadmap evidence would be a **Kubernetes egress and DNS Netwo
 - Reconstruct the traffic path with less step-by-step guidance.
 
 This would extend the completed ingress-policy work to outbound dependency control and the special DNS allowances that egress isolation requires.
+
+---
+
+### October 14–19, 2026 — AWS IAM privilege escalation and CloudTrail investigations
+
+**Evidence:** [IAM Privilege Escalation Case-by-Case Reference and Lab Records](tool-engineering/iam-privilege-escalation-reference.md). This entry updates evidence only; earlier numerical scores are retained pending a fresh holistic assessment.
+
+**Hands-on completed or demonstrated:** Cases 1, 2, 3, 4, 5, 7, 9, 13, 14, 15, and the service-role delegation portion of 16. Cases 6, 8, 10, 11, and 12 were understood conceptually and intentionally skipped because of overlap. Case 17 (EC2 Instance Connect) remains outstanding.
+
+**Technical evidence:**
+
+- IAM managed-policy version manipulation, group inline policy mutation, access-key creation, console-login-profile creation, and role policy attachment were each exercised and analyzed at varying depths through CloudTrail.
+- Case 9 correlated an `AssumeRole` response's temporary key ID to a later successful `ListUsers` role-session event while the original attacker user was denied.
+- Case 13 modified a role trust policy so `lab-attacker` could assume a role previously restricted to another IAM user. Demonstrated trust policy versus permission policy.
+- Cases 14–15 exercised Lambda creation with `iam:PassRole` and subsequent code replacement without re-passing the role. The function's `LabLambdaExecutionRole` permitted `iam:ListUsers`; CloudTrail recorded function creation as `CreateFunction20150331`.
+- Case 16 exercised declarative CloudFormation template submission with a service role. The administrator's initial test stack produced an S3 bucket; an attacker-submitted stack returned a StackId. Final attacker-stack completion and broader IAM privilege escalation were not separately verified.
+- Case 3 used `ec2:RunInstances` and `iam:PassRole` to launch Amazon Linux with `LabEC2ExecutionRole` through an EC2 instance profile. IMDSv2 temporary role credentials were obtained, configured in a Windows CLI profile, and successfully used to perform an IAM operation unavailable to `lab-attacker`.
+- CloudTrail correlated `RunInstances` in `us-west-2` to `ListUsers` in `us-east-1` through the EC2 instance ID in the assumed-role session ARN. The externally originating source IP and Windows CLI user agent supported the observed credential-reuse conclusion; IMDS requests themselves were not visible in CloudTrail.
+- Diagnosed the optional `ec2:CreateTags` permission triggered by tag-on-create, missing EC2 user data, and session-token corruption from timestamps in EC2 console output. Recognized sensitive material in console/debug logs and the need to avoid persisting active credentials.
+
+**Pending:** Implement a multi-Region CloudTrail collector and EC2 instance-role credential-reuse detector; finish Case 17 if useful. Next planned lab is VPC networking and VPC Flow Logs, not yet completed as part of this October sequence.
+
+**Score changes:** None in this update. The existing tracker requires a consistent evidence-based reassessment, not an automatic increase for completing guided labs.
