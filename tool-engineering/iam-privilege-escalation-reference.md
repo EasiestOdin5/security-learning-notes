@@ -293,6 +293,13 @@ ssh -i <private-key-path> <os-user>@<reachable-instance-address>
 | 7 | PutGroupPolicy | Hands-on completed | Yes: denied/mutation/successful API | Skipped deliberately |
 | 8 | AttachGroupPolicy | Concept understood; lab skipped | No | Skipped |
 | 9 | AttachRolePolicy | Hands-on completed | Yes: AssumeRole → temporary credential → ListUsers; original user denied | Skipped deliberately |
+| 3 | PassRole + RunInstances + IMDSv2 | Hands-on completed | Yes: RunInstances / ListUsers, instance-role session, external IP and user agent | Deferred |
+| 10–12 | Inline user/role policies and AddUserToGroup | Concepts understood; labs skipped | No | Skipped |
+| 13 | UpdateAssumeRolePolicy | Hands-on completed | API effects discussed; full CloudTrail correlation not recorded | Skipped |
+| 14 | PassRole + CreateFunction | Hands-on completed | CreateFunction20150331 and role assignment examined | Skipped |
+| 15 | UpdateFunctionCode | Hands-on completed | Not separately investigated | Skipped |
+| 16 | CloudFormation service-role delegation | Hands-on demonstrated S3 creation; IAM escalation not tested | Stack/service-role details; complete CloudTrail investigation not recorded | Deferred |
+| 17 | EC2 Instance Connect | Not completed | No | Not started |
 
 ### Case 1 — CreatePolicyVersion
 
@@ -487,4 +494,143 @@ The user **verified the temporary-key match** between `AssumeRole.responseElemen
 
 **Checklist:** [x] Scenario [x] Successful role-policy attachment [x] AssumeRole + STS temporary credentials [x] Successful role-session API [x] Original user still denied [x] CloudTrail AssumeRole and ListUsers correlation [x] Temporary access-key match [ ] CloudTrail AttachRolePolicy separately inspected [ ] Initial role-session denial before attachment [ ] Detector (deliberately skipped).
 
-**Next:** Case 10 `PutUserPolicy` (concept-only or hands-on decision pending). Separate tooling idea: all-Region CloudTrail collection via boto3; do not count it as a privilege-escalation case.
+**Next:** The remaining case in the original selection is Case 17 (EC2 Instance Connect). Detection engineering and multi-Region collection remain deferred follow-up work.
+
+
+
+### Case 10 — PutUserPolicy (concept-only)
+
+Permitting `iam:PutUserPolicy` on an IAM user the attacker controls can grant that user new inline permissions. Unlike attaching an existing policy, this supplies the policy JSON directly. **Not executed:** concept overlapped with the hands-on group policy and managed policy cases.
+
+### Case 11 — PutRolePolicy + AssumeRole (concept-only)
+
+An attacker who can update a usable role's inline permission policy and assume that role can expand the role's effective permissions and obtain temporary STS credentials. Distinguished inline `PutRolePolicy` from Case 9's managed `AttachRolePolicy`. **Not executed**, due to overlap.
+
+### Case 12 — AddUserToGroup (concept-only)
+
+`iam:AddUserToGroup` can place a controlled IAM user into a group that already holds elevated permissions, provided the operation is authorized for the relevant IAM resources. **Not executed**, due to overlap.
+
+### Case 13 — UpdateAssumeRolePolicy + AssumeRole
+
+**Environment:** `LabAttackerSupportRole` with `IAMReadOnlyAccess`. The initial trust policy admitted `lab-privileged`, not `lab-attacker`. `lab-attacker` had permission to update this role's trust policy and request STS assumption.
+
+**Observed sequence:**
+1. `aws sts assume-role --role-arn arn:aws:iam::220147487340:role/LabAttackerSupportRole --role-session-name Lab13Session --profile lab-attacker` → `AccessDenied` initially.
+2. Updated `trust-lab13.json` to trust `arn:aws:iam::220147487340:user/lab-attacker`.
+3. `aws iam update-assume-role-policy --role-name LabAttackerSupportRole --policy-document file://trust-lab13.json --profile lab-attacker` → successful.
+4. Repeated `AssumeRole` → successful; configured returned temporary credentials locally as `lab13-assumed` and verified role identity.
+
+**Lesson:** Trust policies govern *who may assume* a role; permission policies govern *what the role may do*. Updating trust did not itself grant `iam:ListUsers` to the original IAM user. Full CloudTrail investigation and detector were not recorded.
+
+### Case 14 — PassRole + Lambda CreateFunction / InvokeFunction
+
+**Environment:** `LabLambdaExecutionRole` trusts `lambda.amazonaws.com`, with `AWSLambdaBasicExecutionRole` and subsequently `IAMReadOnlyAccess`; region `us-west-2`. `lab-attacker` had `lambda:CreateFunction`, `lambda:InvokeFunction`, and `iam:PassRole` to this role.
+
+A preliminary Lambda `lab14-test` demonstrated that `boto3.client("iam").list_users()` failed before `IAMReadOnlyAccess` was attached and succeeded after attachment. The actual attacker-created function used:
+
+```python
+import boto3
+def lambda_handler(event, context):
+    iam = boto3.client("iam")
+    response = iam.list_users()
+    return {"users": [user["UserName"] for user in response["Users"]]}
+```
+
+```powershell
+Compress-Archive -Path .\lambda_function.py -DestinationPath .\lab14.zip -Force
+aws lambda create-function `
+  --function-name lab14-privesc `
+  --runtime python3.14 `
+  --role arn:aws:iam::220147487340:role/LabLambdaExecutionRole `
+  --handler lambda_function.lambda_handler `
+  --zip-file fileb://lab14.zip `
+  --region us-west-2 `
+  --profile lab-attacker
+aws lambda invoke --function-name lab14-privesc --payload '{}' --cli-binary-format raw-in-base64-out --region us-west-2 --profile lab-attacker output.json
+```
+
+**Observed:** Invocation returned HTTP-status-equivalent Lambda `StatusCode: 200` and a list of IAM user names including `lab-attacker` and `lab-privileged`. A `lambda wait function-active-v2` attempt failed with `AccessDenied` for `lambda:GetFunction`, illustrating that creation/invocation privileges do not imply management/read privileges. `iam:PassRole` is an authorization check during role assignment, not a separate API invocation.
+
+**CloudTrail:** Lambda creation event appeared as **`CreateFunction20150331`** (versioned API event name). `requestParameters.role` recorded the assigned Lambda execution role.
+
+### Case 15 — UpdateFunctionCode (without another PassRole)
+
+The previously created `lab14-privesc` function already held `LabLambdaExecutionRole`. `lab-attacker` was authorized to modify code and invoke the function, but did not need `iam:PassRole` to reuse the unchanged assigned role.
+
+```powershell
+aws lambda update-function-code --function-name lab14-privesc --zip-file fileb://lab14.zip --region us-west-2 --profile lab-attacker
+aws lambda invoke --function-name lab14-privesc --payload '{}' --cli-binary-format raw-in-base64-out --region us-west-2 --profile lab-attacker output.json
+```
+
+**Observed:** Code update and invocation succeeded; `iam:ListUsers` remained available to function code through its existing role. Code modification is meaningful even without IAM API privileges (for example, environment variable or local file access), subject to the execution environment. Published Lambda versions remain immutable; updates target mutable code such as `$LATEST`. Detector not implemented.
+
+### Case 16 — CloudFormation CreateStack + service role
+
+**Environment:** Region `us-west-2`; `LabCloudFormationRole` trusts `cloudformation.amazonaws.com` and was assigned `AmazonS3FullAccess`. This policy allows multiple S3 operations, not only bucket creation. The template `lab16.yaml` was:
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lab 16 - CloudFormation practice
+Resources:
+  LabBucket:
+    Type: AWS::S3::Bucket
+```
+
+The administrator initialized a separate benign `lab16-test` stack and observed the resulting S3 bucket. For the attacker stack, the relevant `lab-attacker` permission policy permitted `cloudformation:CreateStack` on the scoped `lab16-attack` stack ARN and `iam:PassRole` on `LabCloudFormationRole`.
+
+```powershell
+aws cloudformation create-stack `
+  --stack-name lab16-attack `
+  --template-body file://lab16.yaml `
+  --role-arn arn:aws:iam::220147487340:role/LabCloudFormationRole `
+  --region us-west-2 `
+  --profile lab-attacker
+```
+
+**Observed:** AWS returned a StackId for `lab16-attack`, establishing that `CreateStack` with the chosen service role was authorized and accepted. **A final `CREATE_COMPLETE` result for this attacker stack was not supplied in the recorded exchange**; do not present the S3 resource's completed creation for that stack as independently verified. The `lab16-test` stack did produce an S3 bucket.
+
+**Lesson:** One `CreateStack` request submits the template and assigned role and starts asynchronous provisioning; there is no standalone `PassRole` API call. CloudFormation interprets the declarative template and provisions only resources supported by the role's effective permissions. Changing the role permissions and template could enable more impactful actions, but **IAM privilege escalation through this stack was not tested**. CloudFormation stack creation does not imply unrestricted IAM privileges.
+
+### Case 3 — PassRole + RunInstances + IMDSv2 (completed after Case 16)
+
+**Environment:** `LabEC2ExecutionRole`, created through IAM's EC2 role workflow (EC2 trust principal `ec2.amazonaws.com`), attached `IAMReadOnlyAccess`, plus instance profile of the same name. `lab-attacker` received `ec2:RunInstances` and scoped `iam:PassRole` to this role (service `ec2.amazonaws.com`). Direct `iam:ListUsers` using `lab-attacker` failed.
+
+**EC2 launch:** Amazon Linux 2023 in `us-west-2`. An initial `RunInstances` call failed because launch-time tagging required **`ec2:CreateTags`**; removing `--tag-specifications` allowed launch without broadening attack permissions. The first confirmed running instance was `i-0865c19a6f8889a21`, with `arn:aws:iam::220147487340:instance-profile/LabEC2ExecutionRole`. Later trial instances used user data.
+
+```powershell
+aws ec2 run-instances `
+  --image-id <verified-al2023-ami-in-us-west-2> `
+  --instance-type t3.micro `
+  --count 1 `
+  --iam-instance-profile Name=LabEC2ExecutionRole `
+  --metadata-options HttpTokens=required,HttpEndpoint=enabled `
+  --user-data file://lab3-userdata.sh `
+  --region us-west-2 `
+  --profile lab-attacker
+```
+
+**User-data execution:** A Linux shell script ran at first boot and invoked `aws sts get-caller-identity` and `aws iam list-users` as the EC2 role, proving indirect permission use. A subsequent script requested an IMDSv2 token via HTTP PUT to `http://169.254.169.254/latest/api/token`, queried `/latest/meta-data/iam/security-credentials/`, and retrieved temporary `AccessKeyId`, `SecretAccessKey`, `Token`, and `Expiration`. The role credentials were then configured on Windows as a separate `lab3-assumed` CLI profile.
+
+**Troubleshooting observed:** One instance had no user data (`describe-instance-attribute --attribute userData` returned `None`), so its startup output was absent. Later, the long session token printed in EC2 console output contained an inserted timestamp, causing `InvalidClientTokenId` in the Windows CLI. Removing the extraneous timestamp resolved authentication. This was **log-output corruption during copying**, not evidence of AWS blocking external credential use. Printing secrets into console output and AWS CLI `--debug` logs exposes credentials; avoid persistent secret logging in future labs. Treat those demonstrated session credentials as exposed and allow them to expire/revoke as appropriate.
+
+**Success:** The recovered role credentials authenticated from the user's **local Windows CLI** and could call `ListUsers`, whereas `lab-attacker` lacked that direct capability.
+
+**CloudTrail investigation:**
+- `RunInstances` was logged in `us-west-2` with `lab-attacker` as the actor and the instance ID/profile in its data. `RunInstances.userIdentity.accessKeyId` is **the attacker's key**, not the new EC2 role's temporary key.
+- `requestParameters.userData` appeared as `<sensitiveDataRemoved>`; script contents and success cannot be reconstructed from this field.
+- The subsequent `ListUsers` event appeared in **`us-east-1`**. Its assumed-role session ARN included `LabEC2ExecutionRole/<instance-id>`; that instance ID matched the corresponding `RunInstances` instance ID.
+- The `ListUsers` event's `sourceIPAddress` and `userAgent` identified the local computer and Windows AWS CLI, despite an EC2 instance session identity. This is the main evidence supporting **external reuse**.
+- IMDS is a local HTTP service; its requests do **not** produce CloudTrail events. `sessionContext.ec2RoleDelivery`, when present, identifies IMDS credential delivery version, not the process that fetched the credentials.
+- Distinguish **observed** external credential use from the **inferred** mechanism of extraction. IP and user agent can be shared/spoofed or have legitimate alternatives. Compare expected instance NAT/endpoint egress to actual source; a matching instance ID alone is normal, not malicious.
+
+**Cross-Region lesson:** Correlation must not assume that the API's CloudTrail `awsRegion` matches the EC2 Region. Combine `us-west-2` and `us-east-1` activity using the account ID, instance ID in the EC2 role session, and temporary `accessKeyId`; group subsequent role calls by temporary key. A last-one-hour collection from both Regions works for the immediate lab but does not ensure coverage for older instances or delayed records. A production design would maintain historical instance/role inventory and collect organization-wide multi-Region events.
+
+**Detection idea, deferred:** Identify EC2-role session activity; extract the instance ID; associate it with the instance profile; flag API use outside expected VPC/NAT/VPC-endpoint context. Treat unusual OS/userAgent and related attacker's source IP as supporting indicators. Do not label the IMDS request itself as directly observed.
+
+**Explicit exclusions:** Additional `AmazonSSMManagedInstanceCore` role permissions were discussed for Session Manager access but were not required for the core attack, and interactive admin connection was not needed for attacker execution. No detector was implemented for this case.
+
+### Remaining follow-up
+
+- **Case 17:** EC2 Instance Connect was not performed in this 17-case sequence.
+- **Parser:** Implement cross-Region CloudTrail collection and EC2-role credential-reuse correlation after a consolidation period. These are not currently marked complete.
+- **Next subject:** Hands-on VPC networking and VPC Flow Logs, then CloudWatch Logs Insights and GuardDuty correlation. This next subject is a plan, **not** a completed new lab.
